@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jogo das 5 Palavras</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; }
+    input, button { margin: 5px 0; width: 100%; padding: 10px; }
+    .hint { font-weight: bold; color: blue; margin: 10px 0; }
+    .log { background: #f0f0f0; padding: 10px; margin-top: 15px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h2>Jogo das 5 Palavras</h2>
+
+  <input id="player" placeholder="Seu nome" />
+  <input id="wordlist" placeholder="6 palavras separadas por vírgula" />
+  <button onclick="startGame()">Iniciar Jogo</button>
+
+  <hr />
+
+  <input id="guess" placeholder="Seu palpite" />
+  <button onclick="makeGuess()">Enviar Palpite</button>
+
+  <button onclick="checkStatus()">Ver Status</button>
+
+  <div class="hint" id="hint"></div>
+  <div class="log" id="log"></div>
+
+  <script>
+    const api = "http://localhost:5000";
+
+    async function startGame() {
+      const player = document.getElementById("player").value.trim();
+      const words = document.getElementById("wordlist").value.trim().split(",");
+
+      const res = await fetch(`${api}/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ player, words: words.map(w => w.trim()) })
+      });
+
+      const data = await res.json();
+      document.getElementById("log").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function makeGuess() {
+      const player = document.getElementById("player").value.trim();
+      const guess = document.getElementById("guess").value.trim();
+
+      const res = await fetch(`${api}/guess`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ player, guess })
+      });
+
+      const data = await res.json();
+      document.getElementById("log").textContent = JSON.stringify(data, null, 2);
+      if (data.hint) document.getElementById("hint").textContent = `Dica: ${data.hint}`;
+    }
+
+    async function checkStatus() {
+      const player = document.getElementById("player").value.trim();
+      const res = await fetch(`${api}/status/${player}`);
+      const data = await res.json();
+      document.getElementById("log").textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
