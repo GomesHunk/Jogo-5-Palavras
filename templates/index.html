@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -5,66 +6,572 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jogo das 5 Palavras</title>
   <style>
-    body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; }
-    input, button { margin: 5px 0; width: 100%; padding: 10px; }
-    .hint { font-weight: bold; color: blue; margin: 10px 0; }
-    .log { background: #f0f0f0; padding: 10px; margin-top: 15px; white-space: pre-wrap; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .game-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .game-title {
+      text-align: center;
+      color: #333;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .game-subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+    }
+
+    .section {
+      margin-bottom: 30px;
+      opacity: 0;
+      animation: fadeIn 0.8s ease-out forwards;
+    }
+
+    .section:nth-child(2) { animation-delay: 0.2s; }
+    .section:nth-child(3) { animation-delay: 0.4s; }
+    .section:nth-child(4) { animation-delay: 0.6s; }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+
+    .section-title {
+      font-size: 1.3em;
+      color: #444;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon {
+      width: 24px;
+      height: 24px;
+      display: inline-block;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #555;
+      font-weight: 500;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e1e5e9;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background: #f8f9fa;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .btn {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(45deg, #28a745, #20c997);
+      margin-top: 10px;
+    }
+
+    .btn-info {
+      background: linear-gradient(45deg, #17a2b8, #138496);
+      font-size: 14px;
+      padding: 10px 20px;
+    }
+
+    .game-section {
+      background: #f8f9fa;
+      border-radius: 15px;
+      padding: 25px;
+      border-left: 5px solid #667eea;
+    }
+
+    .hint-display {
+      background: linear-gradient(45deg, #ffeaa7, #fdcb6e);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #2d3436;
+      box-shadow: 0 5px 15px rgba(253, 203, 110, 0.3);
+      display: none;
+    }
+
+    .status-display {
+      background: #e3f2fd;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+      border-left: 5px solid #2196f3;
+    }
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: white;
+      border-radius: 8px;
+    }
+
+    .status-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: #e9ecef;
+      border-radius: 5px;
+      overflow: hidden;
+      margin: 15px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(45deg, #28a745, #20c997);
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+
+    .message {
+      padding: 15px;
+      border-radius: 10px;
+      margin: 15px 0;
+      font-weight: 500;
+      text-align: center;
+      display: none;
+    }
+
+    .message.success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+
+    .message.info {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+    }
+
+    .game-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-number {
+      font-size: 2em;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 0.9em;
+      margin-top: 5px;
+    }
+
+    .divider {
+      height: 2px;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      border-radius: 1px;
+      margin: 30px 0;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .game-container {
+        padding: 25px;
+      }
+      
+      .game-title {
+        font-size: 2em;
+      }
+      
+      .btn {
+        padding: 12px 25px;
+      }
+    }
   </style>
 </head>
 <body>
-  <h2>Jogo das 5 Palavras</h2>
+  <div class="game-container">
+    <h1 class="game-title">🎯 Jogo das 5 Palavras</h1>
+    <p class="game-subtitle">Desafie sua mente com este emocionante jogo de palavras!</p>
+    
+    <!-- Seção de Configuração do Jogo -->
+    <div class="section" id="setup-section">
+      <h2 class="section-title">
+        <span class="icon">⚙️</span>
+        Configurar Jogo
+      </h2>
+      
+      <div class="input-group">
+        <label for="player">🎮 Seu nome de jogador:</label>
+        <input type="text" id="player" placeholder="Digite seu nome aqui..." />
+      </div>
+      
+      <div class="input-group">
+        <label for="wordlist">📝 Digite 6 palavras separadas por vírgula:</label>
+        <input type="text" id="wordlist" placeholder="palavra1, palavra2, palavra3, palavra4, palavra5, palavra6" />
+        <small style="color: #666; margin-top: 5px; display: block;">
+          💡 A primeira palavra será mostrada, as outras 5 serão o desafio!
+        </small>
+      </div>
+      
+      <button class="btn" onclick="startGame()">🚀 Iniciar Jogo</button>
+    </div>
 
-  <input id="player" placeholder="Seu nome" />
-  <input id="wordlist" placeholder="6 palavras separadas por vírgula" />
-  <button onclick="startGame()">Iniciar Jogo</button>
+    <div class="divider"></div>
 
-  <hr />
+    <!-- Seção do Jogo -->
+    <div class="section game-section hidden" id="game-section">
+      <h2 class="section-title">
+        <span class="icon">🎲</span>
+        Área de Jogo
+      </h2>
+      
+      <div id="first-word-display" class="status-display hidden">
+        <h3>🌟 Primeira palavra (apenas para mostrar):</h3>
+        <div style="font-size: 1.5em; font-weight: bold; text-align: center; margin-top: 10px; color: #667eea;" id="first-word"></div>
+      </div>
 
-  <input id="guess" placeholder="Seu palpite" />
-  <button onclick="makeGuess()">Enviar Palpite</button>
+      <div class="game-stats hidden" id="game-stats">
+        <div class="stat-card">
+          <div class="stat-number" id="current-word-num">1</div>
+          <div class="stat-label">Palavra Atual</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="words-completed">0</div>
+          <div class="stat-label">Completadas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="total-attempts">0</div>
+          <div class="stat-label">Tentativas</div>
+        </div>
+      </div>
 
-  <button onclick="checkStatus()">Ver Status</button>
+      <div class="progress-bar hidden" id="progress-container">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      
+      <div class="hint-display" id="hint-display">
+        <span id="hint-text">Sua dica aparecerá aqui</span>
+      </div>
+      
+      <div class="input-group">
+        <label for="guess">💭 Seu palpite para a palavra atual:</label>
+        <input type="text" id="guess" placeholder="Digite sua resposta..." onkeypress="handleKeyPress(event)" />
+      </div>
+      
+      <button class="btn btn-secondary" onclick="makeGuess()">✨ Enviar Palpite</button>
+      <button class="btn btn-info" onclick="checkStatus()">📊 Ver Status Detalhado</button>
+    </div>
 
-  <div class="hint" id="hint"></div>
-  <div class="log" id="log"></div>
+    <!-- Mensagens -->
+    <div class="message" id="message-display"></div>
+
+    <!-- Status Detalhado -->
+    <div class="section hidden" id="status-section">
+      <h2 class="section-title">
+        <span class="icon">📈</span>
+        Status do Jogo
+      </h2>
+      <div class="status-display" id="detailed-status"></div>
+    </div>
+  </div>
 
   <script>
     const api = "";
+    let gameData = null;
+    let attempts = 0;
+    let wordsCompleted = 0;
+
+    function showMessage(text, type = 'info') {
+      const messageEl = document.getElementById('message-display');
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+      messageEl.style.display = 'block';
+      
+      setTimeout(() => {
+        messageEl.style.display = 'none';
+      }, 4000);
+    }
+
+    function updateProgress() {
+      const progressFill = document.getElementById('progress-fill');
+      const percentage = (wordsCompleted / 5) * 100;
+      progressFill.style.width = percentage + '%';
+    }
+
+    function updateStats() {
+      document.getElementById('current-word-num').textContent = wordsCompleted + 1;
+      document.getElementById('words-completed').textContent = wordsCompleted;
+      document.getElementById('total-attempts').textContent = attempts;
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        makeGuess();
+      }
+    }
 
     async function startGame() {
       const player = document.getElementById("player").value.trim();
       const words = document.getElementById("wordlist").value.trim().split(",");
 
-      const res = await fetch(`${api}/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ player, words: words.map(w => w.trim()) })
-      });
+      if (!player) {
+        showMessage("Por favor, digite seu nome!", "error");
+        return;
+      }
 
-      const data = await res.json();
-      document.getElementById("log").textContent = JSON.stringify(data, null, 2);
+      if (words.length !== 6) {
+        showMessage("Você precisa digitar exatamente 6 palavras!", "error");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${api}/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ player, words: words.map(w => w.trim()) })
+        });
+
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+          gameData = data;
+          attempts = 0;
+          wordsCompleted = 0;
+          
+          // Mostrar seção do jogo
+          document.getElementById('game-section').classList.remove('hidden');
+          document.getElementById('game-stats').classList.remove('hidden');
+          document.getElementById('progress-container').classList.remove('hidden');
+          
+          // Mostrar primeira palavra
+          document.getElementById('first-word-display').classList.remove('hidden');
+          document.getElementById('first-word').textContent = data.first_word;
+          
+          // Mostrar dica inicial
+          document.getElementById('hint-display').style.display = 'block';
+          document.getElementById('hint-text').textContent = `Dica inicial: ${data.hint_letters[0]}`;
+          
+          updateStats();
+          updateProgress();
+          
+          showMessage(`🎉 Jogo iniciado com sucesso! A primeira palavra é "${data.first_word}". Agora tente adivinhar as outras 5!`, "success");
+        } else {
+          showMessage(data.error || "Erro ao iniciar o jogo", "error");
+        }
+      } catch (error) {
+        showMessage("Erro de conexão. Tente novamente.", "error");
+      }
     }
 
     async function makeGuess() {
       const player = document.getElementById("player").value.trim();
       const guess = document.getElementById("guess").value.trim();
 
-      const res = await fetch(`${api}/guess`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ player, guess })
-      });
+      if (!player || !guess) {
+        showMessage("Digite seu palpite!", "error");
+        return;
+      }
 
-      const data = await res.json();
-      document.getElementById("log").textContent = JSON.stringify(data, null, 2);
-      if (data.hint) document.getElementById("hint").textContent = `Dica: ${data.hint}`;
+      try {
+        attempts++;
+        updateStats();
+        
+        const res = await fetch(`${api}/guess`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ player, guess })
+        });
+
+        const data = await res.json();
+        
+        if (data.status === 'correct') {
+          wordsCompleted++;
+          updateStats();
+          updateProgress();
+          
+          if (data.message.includes("todas as palavras")) {
+            showMessage("🏆 PARABÉNS! Você completou o jogo! Todas as palavras foram descobertas!", "success");
+            document.getElementById('hint-display').style.display = 'none';
+          } else {
+            showMessage(`✅ ${data.message}`, "success");
+            // Atualizar dica para próxima palavra
+            checkStatus();
+          }
+        } else if (data.status === 'incorrect') {
+          showMessage(`❌ ${data.message}`, "error");
+          if (data.hint) {
+            document.getElementById('hint-text').textContent = `Dica atual: ${data.hint}`;
+          }
+        } else {
+          showMessage(data.message || "Resposta do servidor", "info");
+        }
+        
+        // Limpar campo de palpite
+        document.getElementById("guess").value = "";
+        
+      } catch (error) {
+        showMessage("Erro de conexão. Tente novamente.", "error");
+      }
     }
 
     async function checkStatus() {
       const player = document.getElementById("player").value.trim();
-      const res = await fetch(`${api}/status/${player}`);
-      const data = await res.json();
-      document.getElementById("log").textContent = JSON.stringify(data, null, 2);
+      
+      if (!player) {
+        showMessage("Digite seu nome primeiro!", "error");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${api}/status/${player}`);
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+          document.getElementById('status-section').classList.remove('hidden');
+          
+          let statusHTML = '<h4>📋 Situação das Palavras:</h4>';
+          data.revealed_letters.forEach((hint, index) => {
+            const isCompleted = index < data.current_word_index;
+            const isCurrent = index === data.current_word_index;
+            const emoji = isCompleted ? '✅' : (isCurrent ? '🎯' : '⏳');
+            const status = isCompleted ? 'Completada' : (isCurrent ? 'Atual' : 'Pendente');
+            
+            statusHTML += `
+              <div class="status-item">
+                <span>${emoji} Palavra ${index + 1}: <strong>${hint}</strong></span>
+                <span style="color: ${isCompleted ? '#28a745' : (isCurrent ? '#007bff' : '#6c757d')}">${status}</span>
+              </div>
+            `;
+          });
+          
+          if (data.game_finished) {
+            statusHTML += '<div style="text-align: center; margin-top: 15px; color: #28a745; font-weight: bold;">🎉 JOGO CONCLUÍDO! 🎉</div>';
+          }
+          
+          document.getElementById('detailed-status').innerHTML = statusHTML;
+          
+          // Atualizar dica atual se o jogo não terminou
+          if (!data.game_finished && data.current_word_index < 5) {
+            document.getElementById('hint-text').textContent = `Dica atual: ${data.revealed_letters[data.current_word_index]}`;
+          }
+        } else {
+          showMessage(data.error || "Erro ao verificar status", "error");
+        }
+      } catch (error) {
+        showMessage("Erro de conexão. Tente novamente.", "error");
+      }
     }
   </script>
 </body>
