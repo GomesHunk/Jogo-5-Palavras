@@ -17,3 +17,15 @@ deploymentTarget = "cloudrun"
 [[ports]]
 localPort = 3000
 externalPort = 80
+
+[workflows]
+runButton = "Run Game Server"
+
+[[workflows.workflow]]
+name = "Run Game Server"
+author = 43378870
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
