@@ -1,2 +1,2 @@
 flask
-fla
+flask-cors
