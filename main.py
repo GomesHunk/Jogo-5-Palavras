@@ -1,9 +1,11 @@
 
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit, join_room, leave_room
-import uuid
+from flask_socketio import SocketIO, emit, join_room
 import time
+import eventlet
+
+eventlet.monkey_patch()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -349,4 +351,4 @@ def index():
     return render_template("index.html")
 
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000, debug=False)
+    socketio.run(app, host="0.0.0.0", port=3000)
