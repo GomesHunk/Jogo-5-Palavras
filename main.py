@@ -118,57 +118,54 @@ def handle_submit_words(data):
     if player_id not in players_online:
         emit('error', {'message': 'Você não está em uma sala'})
         return
-    
+
     player_info = players_online[player_id]
     room_id = player_info['room']
     room = rooms[room_id]
-    
+
     words = data.get('words', [])
-    if len(words) != 6:
-        emit('error', {'message': 'Você deve enviar exatamente 6 palavras'})
+    if len(words) != 5:
+        emit('error', {'message': 'Você deve enviar exatamente 5 palavras'})
         return
-    
-    # Store player's words
-    room.words_chosen[player_id] = words
+
+    room.words_chosen[player_id] = [word.strip().lower() for word in words]
     room.players[player_id]['words_chosen'] = True
-    
-    # Check if both players have chosen words
-    if len(room.words_chosen) >= 2:
-        # Start game
-        room.game_state = "playing"
-        player_ids = list(room.words_chosen.keys())
-        room.current_turn = player_ids[0]  # First player starts
-        
-        # Initialize game for both players
-        combined_words = []
-        for pid in player_ids:
-            combined_words.extend(room.words_chosen[pid])
-        
-        # Use first 6 words for the game
-        game_words = combined_words[:6]
-        
-        # Create game session
+
+    socketio.emit('words_submitted', {
+        'player_name': player_info['name'],
+        'waiting_for': len(room.players) - len(room.words_chosen),
+        'players_online': get_room_players(room_id)
+    }, room=room_id)
+
+    # Se todos os jogadores enviaram palavras, iniciar o jogo
+    if len(room.words_chosen) == len(room.players) and len(room.players) == 2:
+        player_ids = list(room.players.keys())
+        player_a, player_b = player_ids[0], player_ids[1]
+
         room.game_data = {
-            "words": [word.lower() for word in game_words[1:]],
-            "hint_letters": [word[0].upper() for word in game_words[1:]],
-            "revealed_letters": [word[0].upper() for word in game_words[1:]],
-            "current": 0,
-            "done": False,
-            "first_word": game_words[0]
+            player_a: {
+                "words": room.words_chosen[player_b],
+                "hint_letters": [w[0].upper() for w in room.words_chosen[player_b]],
+                "revealed_letters": [w[0].upper() for w in room.words_chosen[player_b]],
+                "current": 0,
+                "done": False
+            },
+            player_b: {
+                "words": room.words_chosen[player_a],
+                "hint_letters": [w[0].upper() for w in room.words_chosen[player_a]],
+                "revealed_letters": [w[0].upper() for w in room.words_chosen[player_a]],
+                "current": 0,
+                "done": False
+            }
         }
-        
-        # Notify all players that game started
+
+        room.current_turn = player_a  # jogador A começa
+        room.game_state = "playing"
+
         socketio.emit('game_started', {
-            'first_word': game_words[0],
-            'current_turn': room.players[room.current_turn]['name'],
-            'hint_letters': room.game_data['hint_letters'],
-            'players_online': get_room_players(room_id)
-        }, room=room_id)
-    else:
-        # Notify that player submitted words
-        socketio.emit('words_submitted', {
-            'player_name': player_info['name'],
-            'waiting_for': len(room.players) - len(room.words_chosen),
+            'first_word': room.game_data[player_a]['words'][0],
+            'hint_letters': room.game_data[player_a]['hint_letters'],
+            'current_turn': room.players[player_a]['name'],
             'players_online': get_room_players(room_id)
         }, room=room_id)
 
@@ -193,7 +190,7 @@ def handle_make_guess(data):
         return
     
     guess = data.get('guess', '').strip().lower()
-    game_data = room.game_data
+    game_data = room.game_data[player_id]
     
     idx = game_data['current']
     correct_word = game_data['words'][idx]
@@ -250,7 +247,7 @@ def get_room_players(room_id):
         players.append({
             'name': player_data['name'],
             'words_chosen': player_data['words_chosen'],
-            'is_current_turn': room.current_turn == player_id if room.game_state == "playing" else False
+            'is_current_turn': room.current_turn == player_id
         })
     return players
 
