@@ -1,206 +1,225 @@
+
+<!-- FRONTEND: Jogo das 5 Palavras - Atualizado -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jogo das 5 Palavras</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+  <title>Jogo das 5 Palavras - Multiplayer</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
   <style>
-    :root {
-      --primary: #667eea;
-      --secondary: #764ba2;
-      --background: #f8f9fa;
-      --danger: #dc3545;
-      --success: #28a745;
-      --warning: #ffc107;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
-    }
-
     body {
-      background: var(--background);
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-
-    header {
-      background: linear-gradient(45deg, var(--primary), var(--secondary));
-      color: white;
-      text-align: center;
-      padding: 20px;
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #333;
     }
 
     .container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
-      max-width: 800px;
+      max-width: 960px;
       margin: auto;
+      padding: 20px;
     }
 
-    .input-section, .game-section {
+    .section {
       background: white;
       border-radius: 10px;
       padding: 20px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
       margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    .hidden { display: none; }
+    h1 {
+      text-align: center;
+      color: #444;
+    }
 
-    input[type="text"] {
+    label, input, button {
+      display: block;
       width: 100%;
-      padding: 12px;
       margin-bottom: 15px;
+      font-size: 1em;
+    }
+
+    input {
+      padding: 10px;
       border: 1px solid #ccc;
       border-radius: 8px;
-      font-size: 16px;
     }
 
     button {
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
-      background: var(--primary);
+      background: #667eea;
       color: white;
       font-weight: bold;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
       cursor: pointer;
-      transition: 0.3s;
     }
 
-    button:hover {
-      background: var(--secondary);
-    }
-
-    .turn-indicator {
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    .guess-word {
-      font-size: 1.5rem;
-      margin: 20px 0;
-    }
-
-    .chat-box {
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      height: 200px;
+    #chat, #players {
+      max-height: 300px;
       overflow-y: auto;
-      margin-bottom: 10px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
       padding: 10px;
+      border-radius: 8px;
+      background: #f9f9f9;
     }
 
-    @media (max-width: 600px) {
+    .player-turn {
+      color: red;
+      font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
       .container {
         padding: 10px;
       }
-
-      input[type="text"], button {
-        font-size: 14px;
-        padding: 10px;
+      input, button {
+        font-size: 0.95em;
       }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🎯 Jogo das 5 Palavras</h1>
-  </header>
-
   <div class="container">
-    <div class="input-section" id="input-section">
-      <h2>Bem-vindo!</h2>
-      <input type="text" id="player-name" placeholder="Digite seu nome" />
-      <div id="word-inputs"></div>
-      <button onclick="nextWord()" id="next-word-btn">Adicionar Palavra</button>
+    <h1>🎯 Jogo das 5 Palavras</h1>
+
+    <div class="section" id="join-section">
+      <label for="player-name">Nome:</label>
+      <input type="text" id="player-name" />
+
+      <label for="room-id">Código da Sala:</label>
+      <input type="text" id="room-id" placeholder="Digite o código ou deixe vazio para nova sala" />
+
+      <button onclick="joinRoom()">Entrar na Sala</button>
     </div>
 
-    <div class="game-section hidden" id="game-section">
-      <div class="turn-indicator" id="turn-indicator">Aguardando oponente...</div>
-      <div class="guess-word" id="hint"></div>
-      <input type="text" id="guess-input" placeholder="Seu palpite..." />
-      <button onclick="submitGuess()">Enviar</button>
+    <div class="section hidden" id="word-section">
+      <h2>Escolha suas 5 palavras</h2>
+      <div id="word-inputs"></div>
+      <button onclick="submitWords()">Enviar Palavras</button>
+    </div>
+
+    <div class="section hidden" id="game-section">
+      <div id="turn-info"></div>
+      <div id="hint"></div>
+      <label for="guess">Palpite:</label>
+      <input type="text" id="guess" />
+      <button onclick="sendGuess()">Enviar Palpite</button>
+    </div>
+
+    <div class="section hidden" id="chat-section">
+      <h3>Chat</h3>
+      <div id="chat"></div>
+      <input type="text" id="chat-message" placeholder="Mensagem" />
+      <button onclick="sendChat()">Enviar</button>
+    </div>
+
+    <div class="section hidden" id="players-section">
+      <h3>Jogadores na sala</h3>
+      <div id="players"></div>
     </div>
   </div>
 
   <script>
     const socket = io();
-    let name = "";
+    let playerName = '';
+    let roomId = '';
     let wordCount = 0;
-    const words = [];
 
-    socket.on("connect", () => {
-      console.log("Conectado");
+    function joinRoom() {
+      playerName = document.getElementById("player-name").value.trim();
+      roomId = document.getElementById("room-id").value.trim() || Math.random().toString(36).substring(2, 8);
+
+      socket.emit("join_game", { player_name: playerName, room_id: roomId });
+
+      document.getElementById("join-section").classList.add("hidden");
+      document.getElementById("word-section").classList.remove("hidden");
+      createWordInputs();
+    }
+
+    function createWordInputs() {
+      const wordInputs = document.getElementById("word-inputs");
+      wordInputs.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = `Palavra ${i+1}`;
+        input.id = `word-${i}`;
+        wordInputs.appendChild(input);
+      }
+    }
+
+    function submitWords() {
+      const words = [];
+      for (let i = 0; i < 5; i++) {
+        const word = document.getElementById(`word-${i}`).value.trim();
+        if (word.length === 0) {
+          alert("Preencha todas as palavras");
+          return;
+        }
+        words.push(word);
+      }
+      socket.emit("submit_words", { words });
+      document.getElementById("word-section").classList.add("hidden");
+    }
+
+    function sendGuess() {
+      const guess = document.getElementById("guess").value.trim();
+      socket.emit("make_guess", { guess });
+    }
+
+    function sendChat() {
+      const msg = document.getElementById("chat-message").value.trim();
+      socket.emit("chat_message", { message: msg });
+      document.getElementById("chat-message").value = "";
+    }
+
+    socket.on("joined_room", (data) => {
+      document.getElementById("chat-section").classList.remove("hidden");
+      document.getElementById("players-section").classList.remove("hidden");
+    });
+
+    socket.on("players_update", (data) => {
+      const list = document.getElementById("players");
+      list.innerHTML = "";
+      data.players_online.forEach(p => {
+        const item = document.createElement("div");
+        item.innerText = `${p.name} ${p.is_current_turn ? "⬅️" : ""}`;
+        list.appendChild(item);
+      });
     });
 
     socket.on("game_started", (data) => {
-      document.getElementById("input-section").classList.add("hidden");
       document.getElementById("game-section").classList.remove("hidden");
-      updateGame(data);
+      document.getElementById("turn-info").innerText = `Vez de: ${data.current_turn}`;
+      document.getElementById("hint").innerText = `Dica: ${data.hint_letters[0]}`;
     });
 
-    socket.on("update_turn", (data) => {
-      updateGame(data);
+    socket.on("new_chat_message", (data) => {
+      const msgBox = document.getElementById("chat");
+      const msg = document.createElement("div");
+      msg.innerText = `[${data.timestamp}] ${data.player_name}: ${data.message}`;
+      msgBox.appendChild(msg);
+      msgBox.scrollTop = msgBox.scrollHeight;
     });
 
-    function nextWord() {
-      const input = document.getElementById("player-name");
-      if (!name) {
-        if (!input.value.trim()) return alert("Digite seu nome");
-        name = input.value.trim();
-      }
-      const wordInput = document.createElement("input");
-      wordInput.type = "text";
-      wordInput.placeholder = `Palavra ${wordCount + 1}`;
-      wordInput.classList.add("word-input");
-      wordInput.id = `word-${wordCount}`;
-      document.getElementById("word-inputs").appendChild(wordInput);
-      wordInput.focus();
+    socket.on("correct_guess", (data) => {
+      document.getElementById("turn-info").innerText = `Vez de: ${data.next_turn}`;
+      document.getElementById("hint").innerText = `Dica: ${data.hint}`;
+    });
 
-      if (wordCount > 0) document.getElementById(`word-${wordCount - 1}`).disabled = true;
-      wordCount++;
+    socket.on("incorrect_guess", (data) => {
+      document.getElementById("turn-info").innerText = `Vez de: ${data.next_turn}`;
+      document.getElementById("hint").innerText = `Dica: ${data.hint}`;
+    });
 
-      if (wordCount === 5) {
-        document.getElementById("next-word-btn").textContent = "Enviar Palavras";
-        document.getElementById("next-word-btn").onclick = sendWords;
-      }
-    }
-
-    function sendWords() {
-      const inputList = document.querySelectorAll(".word-input");
-      const wordList = Array.from(inputList).map(i => i.value.trim()).filter(Boolean);
-      if (wordList.length !== 5) return alert("Preencha as 5 palavras corretamente.");
-      socket.emit("join_game", { name, words: wordList });
-    }
-
-    function submitGuess() {
-      const guess = document.getElementById("guess-input").value.trim();
-      if (!guess) return;
-      socket.emit("guess", { guess });
-      document.getElementById("guess-input").value = "";
-    }
-
-    function updateGame(data) {
-      const turnIndicator = document.getElementById("turn-indicator");
-      if (data.current_turn === name) {
-        turnIndicator.innerHTML = `🔺 Sua vez de adivinhar!`;
-        document.getElementById("guess-input").disabled = false;
-      } else {
-        turnIndicator.innerHTML = `Aguardando <b>${data.current_turn}</b>...`;
-        document.getElementById("guess-input").disabled = true;
-      }
-
-      document.getElementById("hint").textContent = `Dica: ${data.hint}`;
-    }
+    socket.on("game_finished", (data) => {
+      alert(data.message);
+    });
   </script>
 </body>
 </html>
