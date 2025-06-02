@@ -1,4 +1,3 @@
-<!-- FRONTEND: Jogo das 5 Palavras - Atualizado -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -8,36 +7,203 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
       background: linear-gradient(135deg, #667eea, #764ba2);
       color: #333;
+      min-height: 100vh;
     }
 
     .container {
-      max-width: 960px;
+      max-width: 1200px;
       margin: auto;
       padding: 20px;
+      min-height: 100vh;
     }
 
     .section {
       background: white;
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 20px;
       margin-bottom: 20px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
     .hidden {
-      display: none;
+      display: none !important;
     }
 
     h1 {
       text-align: center;
       color: #444;
+      margin-bottom: 30px;
+      font-size: 2.2em;
     }
 
+    /* Layout do jogo principal */
+    .game-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .main-game {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .sidebar-section {
+      background: white;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .sidebar-section h3 {
+      margin: 0 0 15px 0;
+      color: #667eea;
+      font-size: 1.1em;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 8px;
+    }
+
+    /* Código da sala */
+    .room-code-display {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      text-align: center;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .room-code-label {
+      font-size: 0.9em;
+      opacity: 0.9;
+      margin-bottom: 5px;
+    }
+
+    .room-code-value {
+      font-size: 1.4em;
+      font-weight: bold;
+      letter-spacing: 2px;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Players online */
+    .players-list {
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .player-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .player-item:last-child {
+      border-bottom: none;
+    }
+
+    .player-name {
+      font-weight: 500;
+    }
+
+    .player-status {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .status-icon {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #28a745;
+    }
+
+    .current-turn {
+      color: #dc3545;
+      font-weight: bold;
+    }
+
+    .waiting {
+      background: #ffc107;
+    }
+
+    /* Chat */
+    .chat-container {
+      height: 250px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 10px;
+      background: #f9f9f9;
+      margin-bottom: 10px;
+      max-height: 180px;
+      font-size: 0.9em;
+    }
+
+    .chat-message {
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .chat-message strong {
+      color: #667eea;
+    }
+
+    .chat-input-container {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.9em;
+    }
+
+    .chat-send {
+      padding: 8px 12px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+
+    .chat-send:hover {
+      background: #5a6fd8;
+    }
+
+    /* Formulários das telas iniciais */
     label, input, button {
       display: block;
       width: 100%;
@@ -46,9 +212,10 @@
     }
 
     input {
-      padding: 10px;
-      border: 1px solid #ccc;
+      padding: 12px;
+      border: 1px solid #ddd;
       border-radius: 8px;
+      font-family: inherit;
     }
 
     button {
@@ -59,11 +226,13 @@
       padding: 12px;
       border-radius: 8px;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: all 0.3s;
+      font-family: inherit;
     }
 
     button:hover {
       background: #5a6fd8;
+      transform: translateY(-1px);
     }
 
     .create-room {
@@ -83,34 +252,6 @@
       background: #e0a800;
     }
 
-    .room-code {
-      background: #f8f9fa;
-      border: 2px dashed #667eea;
-      padding: 15px;
-      text-align: center;
-      border-radius: 8px;
-      margin: 15px 0;
-    }
-
-    .room-code h3 {
-      margin: 0 0 10px 0;
-      color: #667eea;
-    }
-
-    .room-code-value {
-      font-size: 1.5em;
-      font-weight: bold;
-      color: #333;
-      letter-spacing: 2px;
-    }
-
-    .options-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
     .back-button {
       background: #6c757d;
       margin-bottom: 20px;
@@ -120,30 +261,121 @@
       background: #5a6268;
     }
 
-    #chat, #players {
-      max-height: 300px;
-      overflow-y: auto;
-      margin-top: 10px;
-      border: 1px solid #ccc;
-      padding: 10px;
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    /* Área do jogo */
+    .game-info {
+      background: #f8f9fa;
+      padding: 15px;
       border-radius: 8px;
-      background: #f9f9f9;
+      margin-bottom: 20px;
+      text-align: center;
     }
 
-    .player-turn {
-      color: red;
+    .turn-indicator {
+      font-size: 1.2em;
       font-weight: bold;
+      color: #667eea;
+      margin-bottom: 10px;
     }
 
+    .hint-display {
+      font-size: 1.1em;
+      color: #333;
+      font-family: 'Courier New', monospace;
+      background: white;
+      padding: 10px;
+      border-radius: 6px;
+      border: 2px dashed #667eea;
+    }
+
+    .guess-container {
+      margin-top: 20px;
+    }
+
+    .guess-input {
+      margin-bottom: 10px;
+    }
+
+    /* Waiting screen */
+    .waiting-screen {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .waiting-animation {
+      font-size: 3em;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-10px);
+      }
+      60% {
+        transform: translateY(-5px);
+      }
+    }
+
+    /* Responsivo */
     @media (max-width: 768px) {
       .container {
         padding: 10px;
       }
-      input, button {
-        font-size: 0.95em;
+
+      .game-layout {
+        grid-template-columns: 1fr;
+        gap: 15px;
       }
+
+      .sidebar {
+        order: -1;
+      }
+
+      .sidebar-section {
+        padding: 12px;
+      }
+
+      .chat-container {
+        height: 200px;
+      }
+
+      .chat-messages {
+        max-height: 130px;
+      }
+
       .options-grid {
         grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 1.8em;
+      }
+
+      .room-code-value {
+        font-size: 1.2em;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 5px;
+      }
+
+      .section, .main-game, .sidebar-section {
+        padding: 15px;
+      }
+
+      h1 {
+        font-size: 1.6em;
       }
     }
   </style>
@@ -170,15 +402,6 @@
       <input type="text" id="create-player-name" placeholder="Digite seu nome" />
       
       <button onclick="createRoom()">Criar Sala</button>
-      
-      <div id="room-created" class="hidden">
-        <div class="room-code">
-          <h3>🎉 Sala Criada com Sucesso!</h3>
-          <p>Compartilhe este código com seu amigo:</p>
-          <div class="room-code-value" id="generated-room-code"></div>
-        </div>
-        <p>Aguardando outro jogador entrar na sala...</p>
-      </div>
     </div>
 
     <!-- Tela para Entrar em Sala -->
@@ -202,27 +425,66 @@
       <button onclick="submitWords()">Enviar Palavras</button>
     </div>
 
-    <!-- Tela do Jogo -->
-    <div class="section hidden" id="game-section">
-      <div id="turn-info"></div>
-      <div id="hint"></div>
-      <label for="guess">Palpite:</label>
-      <input type="text" id="guess" />
-      <button onclick="sendGuess()">Enviar Palpite</button>
-    </div>
+    <!-- Layout principal do jogo -->
+    <div class="game-layout hidden" id="game-layout">
+      <!-- Área principal do jogo -->
+      <div class="main-game">
+        <!-- Tela de espera -->
+        <div id="waiting-screen">
+          <div class="waiting-screen">
+            <div class="waiting-animation">⏳</div>
+            <h3>Aguardando outro jogador...</h3>
+            <p>Compartilhe o código da sala para que alguém possa entrar!</p>
+          </div>
+        </div>
 
-    <!-- Chat -->
-    <div class="section hidden" id="chat-section">
-      <h3>Chat</h3>
-      <div id="chat"></div>
-      <input type="text" id="chat-message" placeholder="Mensagem" />
-      <button onclick="sendChat()">Enviar</button>
-    </div>
+        <!-- Área do jogo -->
+        <div class="hidden" id="game-area">
+          <div class="game-info">
+            <div class="turn-indicator" id="turn-info">Aguardando...</div>
+            <div class="hint-display" id="hint">Preparando jogo...</div>
+          </div>
+          
+          <div class="guess-container">
+            <label for="guess">Seu palpite:</label>
+            <input type="text" id="guess" class="guess-input" placeholder="Digite sua resposta..." />
+            <button onclick="sendGuess()">Enviar Palpite</button>
+          </div>
+        </div>
+      </div>
 
-    <!-- Lista de Jogadores -->
-    <div class="section hidden" id="players-section">
-      <h3>Jogadores na sala</h3>
-      <div id="players"></div>
+      <!-- Barra lateral -->
+      <div class="sidebar">
+        <!-- Código da Sala -->
+        <div class="sidebar-section">
+          <div class="room-code-display">
+            <div class="room-code-label">Código da Sala</div>
+            <div class="room-code-value" id="current-room-code">------</div>
+          </div>
+        </div>
+
+        <!-- Jogadores Online -->
+        <div class="sidebar-section">
+          <h3>👥 Jogadores</h3>
+          <div class="players-list" id="players-list">
+            <div class="player-item">
+              <span>Carregando...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat -->
+        <div class="sidebar-section">
+          <h3>💬 Chat</h3>
+          <div class="chat-container">
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="chat-input-container">
+              <input type="text" id="chat-input" class="chat-input" placeholder="Digite uma mensagem..." />
+              <button class="chat-send" onclick="sendChat()">Enviar</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -230,7 +492,7 @@
     const socket = io();
     let playerName = '';
     let roomId = '';
-    let wordCount = 0;
+    let gameState = 'waiting';
 
     // Funções para navegação entre telas
     function showCreateRoom() {
@@ -244,12 +506,8 @@
     }
 
     function goBack() {
-      // Esconde todas as seções
       document.getElementById("create-room-section").classList.add("hidden");
       document.getElementById("join-room-section").classList.add("hidden");
-      document.getElementById("room-created").classList.add("hidden");
-      
-      // Mostra a tela inicial
       document.getElementById("initial-section").classList.remove("hidden");
     }
 
@@ -262,7 +520,6 @@
         return;
       }
 
-      // Envia sem room_id para criar uma nova sala
       socket.emit("join_game", { player_name: playerName });
     }
 
@@ -308,79 +565,123 @@
       }
       socket.emit("submit_words", { words });
       document.getElementById("word-section").classList.add("hidden");
+      document.getElementById("game-layout").classList.remove("hidden");
     }
 
     function sendGuess() {
       const guess = document.getElementById("guess").value.trim();
-      socket.emit("make_guess", { guess });
-      document.getElementById("guess").value = "";
+      if (guess) {
+        socket.emit("make_guess", { guess });
+        document.getElementById("guess").value = "";
+      }
     }
 
     function sendChat() {
-      const msg = document.getElementById("chat-message").value.trim();
+      const msg = document.getElementById("chat-input").value.trim();
       if (msg) {
         socket.emit("chat_message", { message: msg });
-        document.getElementById("chat-message").value = "";
+        document.getElementById("chat-input").value = "";
       }
+    }
+
+    function updatePlayersDisplay(players) {
+      const playersList = document.getElementById("players-list");
+      playersList.innerHTML = "";
+      
+      players.forEach(player => {
+        const playerItem = document.createElement("div");
+        playerItem.className = "player-item";
+        
+        const playerName = document.createElement("span");
+        playerName.className = "player-name";
+        playerName.textContent = player.name;
+        
+        const playerStatus = document.createElement("div");
+        playerStatus.className = "player-status";
+        
+        // Ícone de status
+        const statusIcon = document.createElement("div");
+        statusIcon.className = `status-icon ${player.words_chosen ? '' : 'waiting'}`;
+        
+        // Indicador de turno
+        if (player.is_current_turn) {
+          playerName.classList.add("current-turn");
+          const turnIcon = document.createElement("span");
+          turnIcon.textContent = "⬅️";
+          playerStatus.appendChild(turnIcon);
+        }
+        
+        // Indicador de palavras escolhidas
+        const wordsIcon = document.createElement("span");
+        wordsIcon.textContent = player.words_chosen ? "✅" : "⏳";
+        
+        playerStatus.appendChild(statusIcon);
+        playerStatus.appendChild(wordsIcon);
+        
+        playerItem.appendChild(playerName);
+        playerItem.appendChild(playerStatus);
+        playersList.appendChild(playerItem);
+      });
+    }
+
+    function addChatMessage(playerName, message, timestamp) {
+      const chatMessages = document.getElementById("chat-messages");
+      const messageDiv = document.createElement("div");
+      messageDiv.className = "chat-message";
+      messageDiv.innerHTML = `<strong>${playerName}:</strong> ${message} <small>(${timestamp})</small>`;
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
     // Eventos do Socket
     socket.on("joined_room", (data) => {
       roomId = data.room_id;
-      
-      // Se foi quem criou a sala, mostra o código
-      if (document.getElementById("create-room-section").style.display !== "none" && 
-          !document.getElementById("create-room-section").classList.contains("hidden")) {
-        document.getElementById("generated-room-code").textContent = roomId;
-        document.getElementById("room-created").classList.remove("hidden");
-      }
+      document.getElementById("current-room-code").textContent = roomId;
       
       // Esconde telas iniciais e mostra tela de palavras
       document.getElementById("create-room-section").classList.add("hidden");
       document.getElementById("join-room-section").classList.add("hidden");
       document.getElementById("word-section").classList.remove("hidden");
-      document.getElementById("chat-section").classList.remove("hidden");
-      document.getElementById("players-section").classList.remove("hidden");
       
       createWordInputs();
     });
 
     socket.on("players_update", (data) => {
-      const list = document.getElementById("players");
-      list.innerHTML = "";
-      data.players_online.forEach(p => {
-        const item = document.createElement("div");
-        item.innerText = `${p.name} ${p.is_current_turn ? "⬅️" : ""} ${p.words_chosen ? "✅" : "⏳"}`;
-        list.appendChild(item);
-      });
+      updatePlayersDisplay(data.players_online);
+      
+      // Se há 2 jogadores e ambos escolheram palavras, esconde a tela de espera
+      const playersReady = data.players_online.filter(p => p.words_chosen).length;
+      if (data.players_online.length === 2 && playersReady === 2) {
+        document.getElementById("waiting-screen").classList.add("hidden");
+        document.getElementById("game-area").classList.remove("hidden");
+      }
     });
 
     socket.on("game_started", (data) => {
-      document.getElementById("game-section").classList.remove("hidden");
-      document.getElementById("turn-info").innerText = `Vez de: ${data.current_turn}`;
-      document.getElementById("hint").innerText = `Dica: ${data.hint_letters[0]}`;
+      gameState = 'playing';
+      document.getElementById("waiting-screen").classList.add("hidden");
+      document.getElementById("game-area").classList.remove("hidden");
+      document.getElementById("turn-info").textContent = `Vez de: ${data.current_turn}`;
+      document.getElementById("hint").textContent = `Dica: ${data.hint_letters[0]}`;
     });
 
     socket.on("new_chat_message", (data) => {
-      const msgBox = document.getElementById("chat");
-      const msg = document.createElement("div");
-      msg.innerText = `[${data.timestamp}] ${data.player_name}: ${data.message}`;
-      msgBox.appendChild(msg);
-      msgBox.scrollTop = msgBox.scrollHeight;
+      addChatMessage(data.player_name, data.message, data.timestamp);
     });
 
     socket.on("correct_guess", (data) => {
-      document.getElementById("turn-info").innerText = `Vez de: ${data.next_turn}`;
-      document.getElementById("hint").innerText = `Dica: ${data.hint}`;
+      document.getElementById("turn-info").textContent = `Vez de: ${data.next_turn}`;
+      document.getElementById("hint").textContent = `Dica: ${data.hint}`;
     });
 
     socket.on("incorrect_guess", (data) => {
-      document.getElementById("turn-info").innerText = `Vez de: ${data.next_turn}`;
-      document.getElementById("hint").innerText = `Dica: ${data.hint}`;
+      document.getElementById("turn-info").textContent = `Vez de: ${data.next_turn}`;
+      document.getElementById("hint").textContent = `Dica: ${data.hint}`;
     });
 
     socket.on("game_finished", (data) => {
       alert(data.message);
+      gameState = 'finished';
     });
 
     socket.on("error", (data) => {
@@ -388,14 +689,26 @@
     });
 
     // Permite pressionar Enter para enviar mensagens
-    document.addEventListener("keypress", function(event) {
+    document.addEventListener("keydown", function(event) {
       if (event.key === "Enter") {
-        if (event.target.id === "chat-message") {
+        if (event.target.id === "chat-input") {
+          event.preventDefault();
           sendChat();
         } else if (event.target.id === "guess") {
+          event.preventDefault();
           sendGuess();
         }
       }
+    });
+
+    // Auto-focus no campo de palpite quando o jogo começar
+    socket.on("game_started", () => {
+      setTimeout(() => {
+        const guessInput = document.getElementById("guess");
+        if (guessInput) {
+          guessInput.focus();
+        }
+      }, 500);
     });
   </script>
 </body>
