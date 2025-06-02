@@ -1,6 +1,5 @@
-
 flask
 flask-cors
-flask-socketio==5,3,4
-flask-socketio==5,8,0
+flask-socketio==5.3.4
+python-socketio==5.8.0
 eventlet
