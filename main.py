@@ -1,18 +1,18 @@
-from flask import Flask, request, jsonify, render_template
+import eventlet
+eventlet.monkey_patch()
+
+from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import time
 import os
-import eventlet
 import random
 import string
-
-eventlet.monkey_patch()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 rooms = {}
 players_online = {}
