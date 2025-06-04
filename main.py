@@ -1,7 +1,7 @@
 import eventlet
 eventlet.monkey_patch()
 
-from flask import Flask, request, jsonify, render_template_string, render_template
+from flask import Flask, request
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import time
@@ -10,21 +10,22 @@ import random
 import string
 
 # --- Constantes do Jogo ---
-NUM_WORDS_PER_PLAYER = 5
+NUM_WORDS_PER_PLAYER = 5 # O jogo é "Jogo das 5 Palavras"
 MAX_PLAYERS_PER_ROOM = 2
-MAX_WORD_LENGTH = 25 # Reduzido do front-end (era 50 no back, 25 no front)
+MAX_WORD_LENGTH = 25
+MIN_WORD_LENGTH = 2
 ROOM_CODE_LENGTH = 6
-ROOM_CLEANUP_INTERVAL_SECONDS = 600 # 10 minutos
-ROOM_EXPIRY_SECONDS = 3600 # 1 hora
+ROOM_CLEANUP_INTERVAL_SECONDS = 600 
+ROOM_EXPIRY_SECONDS = 3600 
 # --- Fim Constantes ---
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'uma_chave_secreta_bem_forte!') # Melhor usar variável de ambiente
-CORS(app)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'desenvolvimento_secret_key_placeholder')
+CORS(app, resources={r"/*": {"origins": "*"}}) # Permite todas as origens para CORS
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
-rooms = {}
-players_online = {} # {sid: {"name": player_name, "room": room_id}}
+rooms = {} 
+players_online = {} 
 
 def generate_room_code(length=ROOM_CODE_LENGTH):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
@@ -32,12 +33,13 @@ def generate_room_code(length=ROOM_CODE_LENGTH):
 class GameRoom:
     def __init__(self, room_id):
         self.room_id = room_id
-        self.players = {} # {sid: {"name": player_name, "words_chosen": False}}
-        self.words_chosen_data = {} # {sid: {'original': [], 'lowercase': []}}
+        self.players = {} 
+        self.words_chosen_data = {} 
         self.current_turn_sid = None
-        self.game_state = "waiting" # waiting, choosing_words, playing, finished
-        self.game_data = None # Detalhes específicos do jogo em andamento
+        self.game_state = "waiting" 
+        self.game_data_for_players = {} 
         self.created_at = time.time()
+        self.last_action_result = None # Para toasts no front-end
 
     def add_player(self, sid, player_name):
         if len(self.players) < MAX_PLAYERS_PER_ROOM and sid not in self.players:
@@ -47,17 +49,20 @@ class GameRoom:
         return False
 
     def remove_player(self, sid):
+        player_name_removed = None
         if sid in self.players:
+            player_name_removed = self.players[sid]["name"]
             del self.players[sid]
         if sid in self.words_chosen_data:
             del self.words_chosen_data[sid]
-        if sid in players_online:
-            del players_online[sid]
+        if sid in self.game_data_for_players: # Limpa também os dados de jogo específicos
+            del self.game_data_for_players[sid]
+        # players_online é gerenciado fora da sala
+        return player_name_removed
 
     def all_players_chosen_words(self):
-        if len(self.players) != MAX_PLAYERS_PER_ROOM:
-            return False
-        return all(player_data["words_chosen"] for player_data in self.players.values())
+        if len(self.players) != MAX_PLAYERS_PER_ROOM: return False
+        return all(p_data["words_chosen"] for p_data in self.players.values())
 
     def get_opponent_sid(self, player_sid):
         for sid_in_room in self.players.keys():
@@ -65,361 +70,312 @@ class GameRoom:
                 return sid_in_room
         return None
 
-    def reset_game_state(self):
+    def reset_game_state_for_new_round(self):
         self.words_chosen_data = {}
-        for sid in self.players:
-            self.players[sid]["words_chosen"] = False
+        for sid_player in self.players: # Itera sobre as chaves (sids)
+            self.players[sid_player]["words_chosen"] = False
         self.current_turn_sid = None
-        self.game_state = "choosing_words" # Ou "waiting" se < MAX_PLAYERS
-        self.game_data = None
+        self.game_state = "choosing_words" if len(self.players) == MAX_PLAYERS_PER_ROOM else "waiting"
+        self.game_data_for_players = {}
+        self.last_action_result = None
+
+def generate_hint(word_lc, num_revealed):
+    if not word_lc: return "_" 
+    if num_revealed >= len(word_lc): return word_lc.upper()
+    return word_lc[:num_revealed].upper() + "_" * (len(word_lc) - num_revealed)
+
+def get_room_players_info(room_obj):
+    if not room_obj: return []
+    return [{
+        "name": p_data["name"],
+        "words_chosen": p_data["words_chosen"],
+        "is_current_turn": room_obj.current_turn_sid is not None and room_obj.current_turn_sid == sid
+    } for sid, p_data in room_obj.players.items()]
+
+def broadcast_game_state(room_obj):
+    if not room_obj or room_obj.game_state != "playing" or not room_obj.current_turn_sid:
+        return
+
+    active_player_sid = room_obj.current_turn_sid
+    if active_player_sid not in room_obj.players: # Jogador da vez não existe mais na sala
+        print(f"ERRO broadcast: Jogador da vez {active_player_sid} não encontrado na sala {room_obj.room_id}")
+        # Aqui poderia ter lógica para selecionar novo jogador ou terminar o jogo
+        return
+        
+    active_player_name = room_obj.players[active_player_sid]["name"]
+    active_player_challenge = room_obj.game_data_for_players.get(active_player_sid)
+
+    if not active_player_challenge:
+        print(f"ERRO broadcast: Dados de desafio não encontrados para {active_player_name} (SID: {active_player_sid})")
+        return
+
+    keyword = active_player_challenge["words_to_guess_original"][0]
+    initials = [w[0].upper() for w in active_player_challenge["words_to_guess_original"][1:]]
+    all_target_words = active_player_challenge["words_to_guess_original"]
+    completed_mask = active_player_challenge["completed_words_mask"]
+    current_word_idx = active_player_challenge["current_word_idx_guessing"]
+    
+    hint_for_active = "JOGO COMPLETO"
+    if current_word_idx < NUM_WORDS_PER_PLAYER:
+        word_lc = active_player_challenge["words_to_guess_lowercase"][current_word_idx]
+        revealed = active_player_challenge["revealed_letters_count"][current_word_idx]
+        hint_for_active = generate_hint(word_lc, revealed)
+    else:
+        current_word_idx = NUM_WORDS_PER_PLAYER 
+
+    base_payload = {
+        "viewing_for_player_name": active_player_name,
+        "keyword_to_display": keyword,
+        "initials_to_display": initials,
+        "all_target_words_original_for_progress": all_target_words,
+        "completed_mask_for_progress": completed_mask,
+        "active_word_idx_being_guessed": current_word_idx,
+        "current_hint": hint_for_active,
+        "actual_current_turn_player_name": active_player_name, 
+        "last_action_result": room_obj.last_action_result
+    }
+    room_obj.last_action_result = None 
+
+    for sid_in_room in list(room_obj.players.keys()): # list() para cópia segura se players mudar
+        payload_for_client = base_payload.copy()
+        payload_for_client["is_your_turn"] = (sid_in_room == active_player_sid)
+        socketio.emit("update_game_display", payload_for_client, room=sid_in_room)
 
 @app.route("/")
 def index():
-    return render_template("index.html") # Assume que seu HTML está em templates/index.html
+    return "Servidor Jogo das 5 Palavras Online!"
 
 @socketio.on("connect")
 def on_connect():
-    emit("connected", {"message": "Conectado ao servidor."})
     print(f"Cliente conectado: {request.sid}")
+    emit("connected", {"message": "Conectado ao servidor."})
 
 @socketio.on("disconnect")
 def on_disconnect():
-    print(f"Cliente desconectado: {request.sid}")
     sid = request.sid
-    if sid in players_online:
-        room_id = players_online[sid]['room']
-        player_name = players_online[sid]['name']
-        
+    print(f"Cliente desconectado: {request.sid}")
+    player_info = players_online.pop(sid, None)
+    if player_info:
+        room_id = player_info['room']
+        disconnected_player_name = player_info['name']
         if room_id in rooms:
             room = rooms[room_id]
             room.remove_player(sid)
-            
-            socketio.emit("player_left", {
-                "player_name": player_name,
-                "players_online": get_room_players_info(room)
-            }, room=room_id)
-
-            if room.game_state == "playing" and len(room.players) < MAX_PLAYERS_PER_ROOM :
-                opponent_sid = room.get_opponent_sid(None) # Pega o jogador restante
-                if opponent_sid:
-                    socketio.emit("opponent_disconnected", {
-                        "message": f"{player_name} desconectou. Você venceu por W.O.!",
-                        "winner_name": room.players[opponent_sid]["name"]
-                    }, room=opponent_sid)
+            socketio.emit("player_left", {"player_name": disconnected_player_name, "players_online": get_room_players_info(room)}, room=room_id)
+            if room.game_state == "playing" and len(room.players) == 1:
+                remaining_player_sid = list(room.players.keys())[0]
+                remaining_player_name = room.players[remaining_player_sid]["name"]
                 room.game_state = "finished"
+                socketio.emit("game_finished", {
+                    "winner_name": remaining_player_name,
+                    "message": f"{remaining_player_name} venceu! {disconnected_player_name} desconectou.",
+                    "was_disconnection": True
+                }, room=remaining_player_sid)
+            if not room.players: print(f"Sala {room_id} ficou vazia.")
 
-            if not room.players: # Se a sala ficou vazia
-                print(f"Sala {room_id} vazia, agendando para remoção se não utilizada.")
-                # A limpeza periódica cuidará disso
-    # Limpeza já está no dict global players_online
-    if sid in players_online:
-        del players_online[sid]
-
-
-@socketio.on("join_game") # Renomeado de 'create_or_join_room' para clareza
+@socketio.on("join_game")
 def handle_join_game(data):
     player_name = data.get("player_name", "").strip()
-    room_id_join = data.get("room_id", "").strip().upper()
+    room_id_req = data.get("room_id", "").strip().upper()
+    sid = request.sid
 
-    if not player_name or len(player_name) < 2:
-        emit("error", {"message": "Nome do jogador inválido (mínimo 2 caracteres)."})
-        return
+    if not player_name or len(player_name) < MIN_WORD_LENGTH or len(player_name) > 20:
+        emit("error", {"message": "Nome inválido (2-20 caracteres)."}); return
 
-    room_to_join = None
-    new_room_created = False
-
-    if not room_id_join: # Criar nova sala
-        room_id_join = generate_room_code()
-        rooms[room_id_join] = GameRoom(room_id_join)
-        room_to_join = rooms[room_id_join]
-        new_room_created = True
-        print(f"Jogador {player_name} criando sala {room_id_join}")
-    elif room_id_join in rooms:
-        room_to_join = rooms[room_id_join]
-        print(f"Jogador {player_name} tentando entrar na sala {room_id_join}")
+    target_room = None
+    is_new_room = False
+    if not room_id_req:
+        room_id_req = generate_room_code()
+        target_room = GameRoom(room_id_req)
+        rooms[room_id_req] = target_room
+        is_new_room = True
+    elif room_id_req in rooms:
+        target_room = rooms[room_id_req]
     else:
-        emit("error", {"message": "Sala não encontrada."})
-        return
+        emit("error", {"message": "Sala não encontrada."}); return
 
-    if len(room_to_join.players) >= MAX_PLAYERS_PER_ROOM and request.sid not in room_to_join.players:
-        emit("error", {"message": f"Sala está cheia (máximo {MAX_PLAYERS_PER_ROOM} jogadores)."})
-        return
+    if len(target_room.players) >= MAX_PLAYERS_PER_ROOM and sid not in target_room.players:
+        emit("error", {"message": "Sala cheia."}); return
 
-    join_room(room_id_join)
-    room_to_join.add_player(request.sid, player_name)
+    join_room(room_id_req)
+    target_room.add_player(sid, player_name)
+    emit("joined_room", {"room_id": room_id_req, "player_name": player_name, "is_creator": is_new_room})
+    socketio.emit("players_update", {"players_online": get_room_players_info(target_room)}, room=room_id_req)
 
-    emit("joined_room", {
-        "room_id": room_id_join,
-        "player_name": player_name,
-        "is_creator": new_room_created,
-        "players_online": get_room_players_info(room_to_join)
-    })
-    
-    socketio.emit("players_update", {
-        "players_online": get_room_players_info(room_to_join)
-    }, room=room_id_join)
-
-    if len(room_to_join.players) == MAX_PLAYERS_PER_ROOM:
-        room_to_join.game_state = "choosing_words"
-        socketio.emit("start_choosing_words", {
-            "message": "Ambos jogadores conectados! Por favor, escolham suas palavras."
-        }, room=room_id_join)
+    if len(target_room.players) == MAX_PLAYERS_PER_ROOM and target_room.game_state != "playing":
+        target_room.game_state = "choosing_words"
+        socketio.emit("start_choosing_words", {"message": "Ambos conectados! Escolham suas palavras."}, room=room_id_req)
 
 @socketio.on("submit_words")
 def handle_submit_words(data):
     sid = request.sid
-    if sid not in players_online: return
-    room_id = players_online[sid]["room"]
-    if room_id not in rooms: return
-    
-    room = rooms[room_id]
-    words = data.get("words", [])
+    player_info = players_online.get(sid)
+    if not player_info: emit("error", {"message": "Jogador não encontrado."}); return
+    room = rooms.get(player_info["room"])
+    if not room: emit("error", {"message": "Sala não encontrada."}); return
 
-    if len(words) != NUM_WORDS_PER_PLAYER:
-        emit("error", {"message": f"Por favor, insira exatamente {NUM_WORDS_PER_PLAYER} palavras."})
-        return
+    words_list = data.get("words", [])
+    if len(words_list) != NUM_WORDS_PER_PLAYER:
+        emit("error", {"message": f"Envie {NUM_WORDS_PER_PLAYER} palavras."}); return
+    for i, w_str in enumerate(words_list):
+        w = w_str.strip()
+        if not w or len(w) < MIN_WORD_LENGTH or len(w) > MAX_WORD_LENGTH:
+            emit("error", {"message": f"Palavra {i+1} inválida ({MIN_WORD_LENGTH}-{MAX_WORD_LENGTH} caracteres)."}); return
     
-    for i, word_entry in enumerate(words):
-        word = word_entry.strip()
-        if not word:
-            emit("error", {"message": f"Palavra {i+1} não pode estar vazia."})
-            return
-        if len(word) > MAX_WORD_LENGTH:
-            emit("error", {"message": f"Palavra {i+1} muito longa (máximo {MAX_WORD_LENGTH} caracteres)."})
-            return
-        if len(word) < 2 : # Validação adicional de tamanho mínimo
-             emit("error", {"message": f"Palavra {i+1} muito curta (mínimo 2 caracteres)."})
-             return
-
-    room.words_chosen_data[sid] = {
-        'original': [w.strip() for w in words],
-        'lowercase': [w.strip().lower() for w in words]
-    }
+    room.words_chosen_data[sid] = {'original': [w.strip() for w in words_list], 'lowercase': [w.strip().lower() for w in words_list]}
     room.players[sid]["words_chosen"] = True
-
-    socketio.emit("words_submitted_update", { # Evento mais específico
-        "player_name": players_online[sid]["name"],
-        "players_online": get_room_players_info(room)
-    }, room=room_id)
-
+    socketio.emit("words_submitted_update", {"player_name": player_info["name"], "players_online": get_room_players_info(room)}, room=room.room_id)
     if room.all_players_chosen_words():
-        start_game_logic(room)
+        initialize_game_round(room)
 
-def start_game_logic(room):
-    room.game_state = "playing"
-    sids_in_room = list(room.players.keys())
-    
-    player1_sid = sids_in_room[0]
-    player2_sid = sids_in_room[1]
+def initialize_game_round(room_obj):
+    room_obj.game_state = "playing"
+    sids = list(room_obj.players.keys())
+    p1_sid, p2_sid = sids[0], sids[1]
 
-    room.game_data = {
-        player1_sid: { # Dados para o Jogador 1 adivinhar (palavras do Jogador 2)
-            "words_to_guess_original": room.words_chosen_data[player2_sid]['original'],
-            "words_to_guess_lowercase": room.words_chosen_data[player2_sid]['lowercase'],
-            "current_word_index": 0, # Começa na primeira palavra (índice 0)
-            "revealed_letters_count": [1] * NUM_WORDS_PER_PLAYER, # 1 letra revelada para cada palavra inicialmente
-            "completed_words_mask": [False] * NUM_WORDS_PER_PLAYER
-        },
-        player2_sid: { # Dados para o Jogador 2 adivinhar (palavras do Jogador 1)
-            "words_to_guess_original": room.words_chosen_data[player1_sid]['original'],
-            "words_to_guess_lowercase": room.words_chosen_data[player1_sid]['lowercase'],
-            "current_word_index": 0,
-            "revealed_letters_count": [1] * NUM_WORDS_PER_PLAYER,
-            "completed_words_mask": [False] * NUM_WORDS_PER_PLAYER
-        }
+    room_obj.game_data_for_players = {
+        p1_sid: {"words_to_guess_original": room_obj.words_chosen_data[p2_sid]['original'],
+                 "words_to_guess_lowercase": room_obj.words_chosen_data[p2_sid]['lowercase'],
+                 "current_word_idx_guessing": 1, # Advinha a partir da segunda palavra
+                 "revealed_letters_count": [len(room_obj.words_chosen_data[p2_sid]['original'][0])] + [1] * (NUM_WORDS_PER_PLAYER -1), # Primeira palavra (keyword) totalmente revelada para contagem
+                 "completed_words_mask": [True] + [False] * (NUM_WORDS_PER_PLAYER - 1)}, # Keyword é "completa"
+        p2_sid: {"words_to_guess_original": room_obj.words_chosen_data[p1_sid]['original'],
+                 "words_to_guess_lowercase": room_obj.words_chosen_data[p1_sid]['lowercase'],
+                 "current_word_idx_guessing": 1,
+                 "revealed_letters_count": [len(room_obj.words_chosen_data[p1_sid]['original'][0])] + [1] * (NUM_WORDS_PER_PLAYER -1),
+                 "completed_words_mask": [True] + [False] * (NUM_WORDS_PER_PLAYER - 1)}
     }
-    room.current_turn_sid = random.choice(sids_in_room)
-
-    for sid_player in sids_in_room:
-        player_game_state = room.game_data[sid_player]
-        words_original = player_game_state["words_to_guess_original"]
-        words_lc = player_game_state["words_to_guess_lowercase"]
-
-        # A primeira palavra é a "palavra chave"
-        first_word_given = words_original[0]
-        # As iniciais das outras palavras (da segunda em diante)
-        initials_of_other_words = [word[0].upper() for word in words_original[1:]]
-        
-        # A primeira palavra a ser efetivamente ADIVINHADA é a segunda (índice 1), mas o jogador já sabe a primeira.
-        # O jogo começa com o jogador tentando "confirmar" a primeira palavra ou avançando para a segunda.
-        # Para manter a lógica de "adivinhar desde a primeira palavra", mesmo que ela seja dada:
-        current_target_idx = player_game_state["current_word_index"] # Começa em 0
-        current_target_lc = words_lc[current_target_idx]
-        revealed_count = player_game_state["revealed_letters_count"][current_target_idx] # Deve ser 1
-        
-        # Se a primeira palavra tem apenas 1 letra, ela é totalmente revelada pela dica inicial.
-        if len(current_target_lc) <= revealed_count :
-             current_hint_for_guess = current_target_lc.upper()
-        else:
-             current_hint_for_guess = current_target_lc[:revealed_count].upper() + "_" * (len(current_target_lc) - revealed_count)
-
-        socketio.emit("game_started", {
-            "first_word_given": first_word_given,
-            "initials_of_other_words": initials_of_other_words,
-            "current_hint_for_guess": current_hint_for_guess,
-            "current_word_display_index": current_target_idx, # Para o front saber qual slot de palavra está ativo
-            "your_turn": sid_player == room.current_turn_sid,
-            "current_turn_player_name": room.players[room.current_turn_sid]["name"],
-        }, room=sid_player)
-
+    room_obj.current_turn_sid = random.choice(sids)
+    room_obj.last_action_result = {"type": "game_start"}
+    broadcast_game_state(room_obj)
 
 @socketio.on("make_guess")
 def handle_make_guess(data):
     sid = request.sid
-    if sid not in players_online: return
-    room_id = players_online[sid]["room"]
-    if room_id not in rooms: return
+    player_info = players_online.get(sid)
+    if not player_info: return
+    room = rooms.get(player_info["room"])
+    if not room: return
+    if room.game_state != "playing" or room.current_turn_sid != sid:
+        emit("error", {"message": "Não é sua vez ou jogo não ativo."}); return
+    
+    guess_orig = data.get("guess", "").strip()
+    guess_lc = guess_orig.lower()
+    if not guess_lc: emit("error", {"message": "Palpite vazio."}); return
 
-    room = rooms[room_id]
-    guess = data.get("guess", "").strip().lower()
+    active_player_challenge = room.game_data_for_players[sid]
+    idx_guessing = active_player_challenge["current_word_idx_guessing"]
 
-    if room.game_state != "playing":
-        emit("error", {"message": "O jogo não está em andamento."})
-        return
-    if room.current_turn_sid != sid:
-        emit("error", {"message": "Não é sua vez."})
-        return
-    if not guess:
-        emit("error", {"message": "Palpite não pode ser vazio."}) # Feedback para o jogador atual
-        return
+    if idx_guessing >= NUM_WORDS_PER_PLAYER: # Já completou tudo
+        broadcast_game_state(room); return # Apenas reenvia o estado atual
 
-    player_game_state = room.game_data[sid]
-    current_idx = player_game_state["current_word_index"]
-    target_word_lc = player_game_state["words_to_guess_lowercase"][current_idx]
-    target_word_original = player_game_state["words_to_guess_original"][current_idx]
+    target_lc = active_player_challenge["words_to_guess_lowercase"][idx_guessing]
+    target_orig = active_player_challenge["words_to_guess_original"][idx_guessing]
 
-    if guess == target_word_lc:
-        player_game_state["completed_words_mask"][current_idx] = True
-        player_game_state["current_word_index"] += 1
-        
-        if player_game_state["current_word_index"] >= NUM_WORDS_PER_PLAYER:
+    if guess_lc == target_lc:
+        active_player_challenge["completed_words_mask"][idx_guessing] = True
+        active_player_challenge["current_word_idx_guessing"] += 1
+        room.last_action_result = {"type": "correct_guess", "by_player_name": player_info["name"], "word": target_orig}
+        if active_player_challenge["current_word_idx_guessing"] >= NUM_WORDS_PER_PLAYER:
             room.game_state = "finished"
             socketio.emit("game_finished", {
-                "winner_name": room.players[sid]["name"],
-                "message": f"🎉 {room.players[sid]['name']} venceu o jogo!",
-                "correct_sequence": player_game_state["words_to_guess_original"]
-            }, room=room_id)
-        else:
-            # Continua jogando, prepara dica para a PRÓXIMA palavra
-            next_idx = player_game_state["current_word_index"]
-            next_target_lc = player_game_state["words_to_guess_lowercase"][next_idx]
-            # Usa a contagem de letras reveladas para a próxima palavra (deve ser 1)
-            revealed_count = player_game_state["revealed_letters_count"][next_idx] 
-
-            if len(next_target_lc) <= revealed_count:
-                 current_hint = next_target_lc.upper()
-            else:
-                 current_hint = next_target_lc[:revealed_count].upper() + "_" * (len(next_target_lc) - revealed_count)
-            
-            socketio.emit("correct_guess", {
-                "player_name": room.players[sid]["name"],
-                "guessed_word_original": target_word_original, # Palavra que acabou de acertar
-                "next_hint": current_hint, # Dica para a próxima palavra
-                "next_word_display_index": next_idx,
-                "is_still_my_turn": True, # Jogador continua
-                "current_turn_player_name": room.players[room.current_turn_sid]["name"],
-                "completed_words_mask": player_game_state["completed_words_mask"]
-            }, room=room_id) # Notifica ambos
+                "winner_name": player_info["name"],
+                "message": f"🎉 {player_info['name']} venceu!",
+                "final_words_sequence": active_player_challenge["words_to_guess_original"], # Sequência que ele adivinhou
+                "was_disconnection": False
+            }, room=room.room_id)
+            return 
     else:
-        # Errou - revela mais uma letra da palavra ATUAL e passa a vez
-        player_game_state["revealed_letters_count"][current_idx] += 1
-        revealed_count = player_game_state["revealed_letters_count"][current_idx]
-        
-        if revealed_count >= len(target_word_lc) :
-            new_hint_for_current_word = target_word_lc.upper()
-        else:
-            new_hint_for_current_word = target_word_lc[:revealed_count].upper() + "_" * (len(target_word_lc) - revealed_count)
-        
+        active_player_challenge["revealed_letters_count"][idx_guessing] += 1
         room.current_turn_sid = room.get_opponent_sid(sid)
-        
-        socketio.emit("incorrect_guess", {
-            "player_name": room.players[sid]["name"], # Quem errou
-            "guessed_word_attempt": data.get("guess", "").strip(), # O palpite original (não lowercase)
-            "updated_hint_for_guesser": new_hint_for_current_word, # Nova dica para o jogador que errou (para o front dele)
-            "word_display_index_for_guesser": current_idx, # Para o jogador que errou saber qual palavra atualizar
-            "is_still_my_turn": False,
-            "current_turn_player_name": room.players[room.current_turn_sid]["name"],
-            "revealed_more_for_player_sid": sid, # Indica qual jogador teve mais letras reveladas
-            "completed_words_mask_for_guesser": player_game_state["completed_words_mask"]
-        }, room=room_id) # Notifica ambos
-
+        room.last_action_result = {"type": "incorrect_guess", "by_player_name": player_info["name"], "attempted_word": guess_orig}
+    
+    broadcast_game_state(room)
 
 @socketio.on("chat_message")
 def handle_chat_message(data):
     sid = request.sid
-    if sid not in players_online: return
-    room_id = players_online[sid]["room"]
-    
+    player_info = players_online.get(sid)
+    if not player_info: return
+    room = rooms.get(player_info["room"])
+    if not room: return
     message = data.get("message", "").strip()
-    if not message: return
+    if message and len(message) <= 150:
+        socketio.emit("new_chat_message", {"player_name": player_info["name"], "message": message, "timestamp": time.strftime("%H:%M")}, room=room.room_id)
 
-    socketio.emit("new_chat_message", {
-        "player_name": players_online[sid]["name"],
-        "message": message, # Sanitizar no front-end ou aqui se for renderizar como HTML
-        "timestamp": time.strftime("%H:%M")
-    }, room=room_id)
-
-@socketio.on("request_new_game") # Jogador pede novo jogo
+@socketio.on("request_new_game")
 def handle_request_new_game(data):
     sid = request.sid
-    if sid not in players_online: return
-    room_id = players_online[sid]["room"]
-    if room_id not in rooms: return
-    room = rooms[room_id]
+    player_info = players_online.get(sid)
+    if not player_info: return
+    room = rooms.get(player_info["room"])
+    if not room or room.game_state != "finished":
+        emit("error", {"message": "Só pode iniciar novo jogo após o término."}); return
+    
+    room.reset_game_state_for_new_round()
+    socketio.emit("game_reset_initiated", {"message": f"{player_info['name']} iniciou novo jogo!"}, room=room.room_id)
+    if len(room.players) == MAX_PLAYERS_PER_ROOM:
+        room.game_state = "choosing_words"
+        socketio.emit("start_choosing_words", {"message": "Escolham suas palavras para a nova rodada."}, room=room.room_id)
 
-    # Aqui você pode implementar uma lógica de votação se quiser
-    # Por simplicidade, vamos resetar se um jogador pedir e o jogo estiver 'finished'
-    if room.game_state == "finished":
-        room.reset_game_state()
-        socketio.emit("game_reset_initiated", {
-             "message": f"{players_online[sid]['name']} iniciou um novo jogo! Escolham suas palavras.",
-             "players_online": get_room_players_info(room)
-        }, room=room_id)
-        # Se ambos jogadores estão na sala, vai para escolha de palavras
-        if len(room.players) == MAX_PLAYERS_PER_ROOM:
-            room.game_state = "choosing_words"
-            socketio.emit("start_choosing_words", {}, room=room_id)
-    else:
-        emit("error", {"message": "Só é possível iniciar um novo jogo após o término do atual."})
+@socketio.on("player_initiated_leave")
+def handle_player_initiated_leave():
+    sid = request.sid    
+    player_info = players_online.pop(sid, None)
+    if not player_info: return
 
+    room_id = player_info['room']
+    leaving_player_name = player_info['name']
+    print(f"Jogador {leaving_player_name} (SID:{sid}) saindo voluntariamente da sala {room_id}")
 
-def get_room_players_info(room):
-    if not room: return []
-    return [{
-        "name": player_data["name"],
-        "words_chosen": player_data["words_chosen"],
-        "is_current_turn": room.current_turn_sid == sid 
-    } for sid, player_data in room.players.items()]
+    if room_id in rooms:
+        room = rooms[room_id]
+        room.remove_player(sid) 
+        leave_room(room_id) # SocketIO specific leave
 
+        opponent_sid = room.get_opponent_sid(None)
+        if opponent_sid and opponent_sid in room.players:
+            opponent_name = room.players[opponent_sid]["name"]
+            socketio.emit("opponent_left_game", {"leaver_name": leaving_player_name, "message": f"{leaving_player_name} saiu."}, room=opponent_sid)
+            if room.game_state == "playing" or room.game_state == "choosing_words":
+                room.game_state = "finished"
+                socketio.emit("game_finished", {
+                    "winner_name": opponent_name, "message": f"{opponent_name} venceu! {leaving_player_name} saiu.",
+                    "was_disconnection": True # Trata como W.O. para oponente
+                }, room=opponent_sid)
+            socketio.emit("players_update", {"players_online": get_room_players_info(room)}, room=opponent_sid)
+        
+        if not room.players: print(f"Sala {room_id} vazia após saída voluntária.")
+        else: room.game_state = "waiting" # Ou estado apropriado
 
 def cleanup_inactive_rooms():
     current_time = time.time()
-    rooms_to_delete = []
-    for room_id, room_obj in rooms.items():
-        # Se não há jogadores E a sala tem mais de X minutos OU se a sala é muito antiga
-        no_players_and_old_enough = not room_obj.players and (current_time - room_obj.created_at) > (ROOM_CLEANUP_INTERVAL_SECONDS / 2) # Ex: 5 min sem ninguém
-        very_old_room = (current_time - room_obj.created_at) > ROOM_EXPIRY_SECONDS # Ex: 1 hora de idade
-        
-        if no_players_and_old_enough or very_old_room:
-            if not room_obj.players or room_obj.game_state != "playing": # Não deletar salas ativas com jogadores
-                rooms_to_delete.append(room_id)
-    
-    for room_id in rooms_to_delete:
-        print(f"Limpando sala inativa/expirada: {room_id}")
-        del rooms[room_id]
+    for room_id in list(rooms.keys()):
+        room = rooms[room_id]
+        can_delete = False
+        if not room.players and (current_time - room.created_at > 300): # Vazia por 5 mins
+            can_delete = True
+        if current_time - room.created_at > ROOM_EXPIRY_SECONDS: # Muito antiga
+             can_delete = True
+        if room.game_state == "playing" and room.players: # Não deletar se estiver em jogo com jogadores
+            can_delete = False
+            
+        if can_delete:
+            print(f"Limpando sala inativa/expirada: {room_id}")
+            del rooms[room_id]
 
 def scheduled_cleanup_task():
-    with app.app_context(): # Necessário se você usar funcionalidades do app Flask aqui
+    with app.app_context(): 
         while True:
             socketio.sleep(ROOM_CLEANUP_INTERVAL_SECONDS) 
-            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Executando limpeza de salas agendada...")
+            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Limpeza de salas...")
             cleanup_inactive_rooms()
-            print(f"Salas ativas após limpeza: {len(rooms)}")
+            print(f"Salas ativas: {len(rooms)}")
 
 if __name__ == "__main__":
-    print("Iniciando tarefa de limpeza de salas em background...")
+    print("Iniciando tarefa de limpeza...")
     eventlet.spawn(scheduled_cleanup_task)
-    
     port = int(os.environ.get("PORT", 5000))
-    print(f"Servidor Socket.IO iniciando em host 0.0.0.0 porta {port}")
-    socketio.run(app, host="0.0.0.0", port=port, debug=True) # debug=True para desenvolvimento
+    host = "0.0.0.0"
+    print(f"Servidor iniciando em {host}:{port}")
+    socketio.run(app, host=host, port=port, debug=False, use_reloader=False)
