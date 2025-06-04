@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jogo das 5 Palavras - Completo</title>
+  <title>Jogo das 5 Palavras - Corrigido</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
   <style>
@@ -111,7 +111,7 @@
 
     .game-info { text-align: center; margin-bottom: 20px; }
     .turn-info { font-size: 1.4em; font-weight: 600; color: #6c47d8; margin-bottom: 18px; }
-    .turn-info .active-player-name { font-weight: 700; color: #5a67d8; } /* Ajustado para o nome do jogador */
+    .turn-info .active-player-name { font-weight: 700; color: #5a67d8; }
     
     .keyword-initials-display {
         background-color: rgba(240, 244, 255, 0.85); 
@@ -140,25 +140,24 @@
       min-width: 55px; text-align: center; border: 2px solid #e2e8f0;
       transition: all 0.3s ease;
     }
-    /* Slot para a primeira palavra (keyword), que é dada e não ativamente adivinhada no início */
     .word-slot.revealed-keyword { 
-        background-color: #ebf4ff; /* Azul claro diferente */
+        background-color: #ebf4ff; 
         color: #4299e1; 
         border-color: #90cdf4; 
         font-weight: 700; 
     }
-    .word-slot.completed:not(.revealed-keyword) { /* Palavras completas (não a keyword) */
-        background-color: #f0fff4; /* Verde claro */
+    .word-slot.completed:not(.revealed-keyword) { 
+        background-color: #f0fff4; 
         color: #38a169; 
         border-color: #68d391; 
         font-weight: 700; 
     }
-    .word-slot.is-active-hint { /* Slot da palavra para a qual a dica principal se refere */
+    .word-slot.is-active-hint { 
         border-color: #7f5af0; 
         box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.4); 
     }
 
-    .hint-display { /* Dica principal para a palavra ativa (ex: M _ _ _) */
+    .hint-display { 
       font-size: 2em; font-family: monospace; background: white; padding: 18px; 
       border-radius: 10px; border: 2px solid #e2e8f0; letter-spacing: 4px; 
       margin: 15px auto 25px auto; color: #2d3748; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -176,7 +175,6 @@
     #new-game-button-container { margin-top: 25px; display: flex; flex-direction: column; gap: 10px; align-items: center;}
     #new-game-button-container button.general-button { width: auto; min-width: 200px; }
 
-
     .toast-notification {
       position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px;
       color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -188,7 +186,6 @@
     .toast-notification.success { background: #48bb78; }
     .toast-notification.error { background: #f56565; }
     .toast-notification.info { background: #4299e1; }
-
 
     @media (max-width: 800px) { 
       .game-sidebar { order: 1; }
@@ -203,9 +200,11 @@
       .keyword-initials-display .initial-letter { padding: 5px 8px; min-width: 28px; font-size: 0.9em; }
       .keyword-initials-display .main-keyword { font-size: 1.05em; }
 
-      .input-button-group { flex-direction: column; gap: 10px; }
-      .input-field, .action-button { width: 100%; margin-bottom: 0; } /* Botão também com 100% se empilhado */
-      .action-button { padding: 12px; font-size: 1em;}
+      /* Ajuste para botões e inputs empilhados no mobile */
+      .input-button-group { flex-direction: column; }
+      .input-field { width: 100%; margin-bottom: 8px; /* Adiciona espaço se empilhado */ }
+      .action-button { width: 100%; }
+      
       button.general-button, button.copy-code-btn { font-size: 0.95em; padding: 12px 15px;}
     }
   </style>
@@ -305,24 +304,32 @@
   </div>
 
 <script>
+    // INÍCIO DO BLOCO SCRIPT - VERIFIQUE ESTA PARTE COM ATENÇÃO
     const socket = io(); 
-    let currentPlayerName = ''; // Nome do jogador deste cliente
+    let currentPlayerName = ''; 
     let currentRoomId = '';
-    const NUM_WORDS_TOTAL = 5; // Deve ser igual à constante do backend
+    const NUM_WORDS_TOTAL = 5; 
 
     const allScreenIds = [
       "initial-section", "create-room-section", "join-room-section",
       "word-selection-section", "game-screen-layout"
-    ];
+    ]; // Ponto e vírgula aqui é bom.
 
-    function getElement(id) { return document.getElementById(id); } // Helper
+    function getElement(id) { // Definição correta
+        return document.getElementById(id); 
+    } // Ponto e vírgula opcional, mas não prejudica.
 
-    function showScreen(screenIdToShow) {
-      allScreenIds.forEach(id => getElement(id)?.classList.add("hidden"));
-      getElement(screenIdToShow)?.classList.remove("hidden");
+    function showScreen(screenIdToShow) { // Definição correta
+      allScreenIds.forEach(id => {
+          const el = getElement(id);
+          if(el) el.classList.add("hidden");
+      });
+      const screenEl = getElement(screenIdToShow);
+      if(screenEl) screenEl.classList.remove("hidden");
       
       if (screenIdToShow === 'create-room-section') { 
-        getElement('room-created-info')?.classList.add('hidden');
+        const roomInfoEl = getElement('room-created-info');
+        if(roomInfoEl) roomInfoEl.classList.add('hidden');
         const createNameEl = getElement('create-player-name');
         if(createNameEl) createNameEl.value = '';
       } else if (screenIdToShow === 'join-room-section') {
@@ -331,17 +338,17 @@
         if(joinNameEl) joinNameEl.value = '';
         if(joinCodeEl) joinCodeEl.value = '';
       }
-      getElement('game-finished-display')?.classList.add('hidden'); 
-    }
+      const finishedDispEl = getElement('game-finished-display');
+      if(finishedDispEl) finishedDispEl.classList.add('hidden'); 
+    } // Fim da função showScreen
 
     function showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = `toast-notification ${type}`;
         toast.textContent = message;
         document.body.appendChild(toast);
-        // Pequeno delay para permitir que o CSS aplique a transição inicial
         requestAnimationFrame(() => {
-            requestAnimationFrame(() => { // Outro frame para garantir
+            requestAnimationFrame(() => {
                  toast.classList.add('show');
             });
         });
@@ -350,26 +357,30 @@
             toast.addEventListener('transitionend', () => {
                  if (toast.parentNode) toast.parentNode.removeChild(toast);
             }, { once: true });
-        }, 3000 + (message.length * 25)); // Tempo baseado no tamanho da mensagem
+        }, 3000 + (message.length * 25));
     }
 
     function copyRoomCode() {
       const roomCodeEl = getElement("generated-room-code");
-      if(!roomCodeEl) return;
+      if(!roomCodeEl) { showToast("Erro: Elemento do código da sala não encontrado.", "error"); return; }
       const roomCode = roomCodeEl.textContent;
+      if (!roomCode || roomCode === "CÓDIGO") { showToast("Código da sala ainda não gerado.", "info"); return;}
       navigator.clipboard.writeText(roomCode)
         .then(() => showToast("Código copiado! 📋", "success"))
-        .catch(() => showToast("Erro ao copiar. Código: " + roomCode, "error"));
+        .catch(err => {
+            console.error("Erro ao copiar para clipboard:", err);
+            showToast("Erro ao copiar. Tente manualmente: " + roomCode, "error");
+        });
     }
     
     function resetLocalGameState(){
-        currentRoomId = '';
-        // currentPlayerName é mantido para preenchimento automático
+        currentRoomId = ''; // Mantém currentPlayerName para preenchimento automático
         getElement("players-list")?.innerHTML = "";
         getElement("chat-messages-box")?.innerHTML = "";
         getElement("word-progress-container")?.innerHTML = "";
         getElement("keyword-initials-display")?.innerHTML = "";
-        getElement("current-hint-display")?.textContent = "_ _ _ _ _";
+        const currentHintEl = getElement("current-hint-display");
+        if(currentHintEl) currentHintEl.textContent = "_ _ _ _ _";
         getElement('game-finished-display')?.classList.add('hidden');
     }
 
@@ -377,7 +388,7 @@
         if (currentRoomId) { 
             socket.emit("player_initiated_leave");
         }
-        resetLocalGameState();
+        resetLocalGameState(); // Reseta estado local
         showScreen('initial-section');
     }
     
@@ -389,17 +400,17 @@
         showScreen('initial-section');
     }
     function handleLeaveActiveGame(){ 
-        if (currentRoomId && confirm("Tem certeza que deseja sair da partida? Isso encerrará o jogo para o oponente caso ele esteja sozinho.")) {
+        if (currentRoomId && confirm("Tem certeza que deseja sair da partida?")) {
             socket.emit("player_initiated_leave");
-            resetLocalGameState(); // Limpa o estado local imediatamente
-            showScreen('initial-section'); // Volta para o menu
+            resetLocalGameState(); 
+            showScreen('initial-section'); 
         }
     }
 
     function createRoom() {
       const nameInput = getElement("create-player-name");
       if(!nameInput) return;
-      currentPlayerName = nameInput.value.trim();
+      currentPlayerName = nameInput.value.trim(); // Define currentPlayerName globalmente
       if (!currentPlayerName || currentPlayerName.length < 2 || currentPlayerName.length > 20) {
         showToast("Nome inválido (2-20 caracteres).", "error"); return;
       }
@@ -411,8 +422,8 @@
       const codeInput = getElement("join-room-code");
       if(!nameInput || !codeInput) return;
 
-      currentPlayerName = nameInput.value.trim();
-      const tempRoomId = codeInput.value.trim().toUpperCase(); // Não atribui a currentRoomId ainda
+      currentPlayerName = nameInput.value.trim(); // Define currentPlayerName globalmente
+      const tempRoomId = codeInput.value.trim().toUpperCase(); 
 
       if (!currentPlayerName || currentPlayerName.length < 2 || currentPlayerName.length > 20) {
         showToast("Nome inválido (2-20 caracteres).", "error"); return;
@@ -426,14 +437,14 @@
     function createWordInputFields() {
       const container = getElement("word-inputs-container");
       if(!container) return;
-      container.innerHTML = '';
-      for (let i = 0; i < NUM_WORDS_TOTAL; i++) {
+      container.innerHTML = ''; // Limpa inputs anteriores
+      for (let i = 0; i < NUM_WORDS_TOTAL; i++) { // Usa NUM_WORDS_TOTAL
         const input = document.createElement("input");
         input.type = "text";
         input.classList.add("form-input"); 
         input.placeholder = `Palavra ${i + 1}`;
         input.id = `word-input-${i}`;
-        input.maxLength = 25; 
+        input.maxLength = 25; // MAX_WORD_LENGTH do backend
         container.appendChild(input);
       }
     }
@@ -443,9 +454,9 @@
       const submitBtn = getElement("submit-words-button");
       for (let i = 0; i < NUM_WORDS_TOTAL; i++) {
         const wordEl = getElement(`word-input-${i}`);
-        if(!wordEl) { showToast(`Erro: Input ${i+1} não encontrado.`, "error"); return; }
+        if(!wordEl) { showToast(`Erro interno: Input ${i+1} não encontrado.`, "error"); return; }
         const word = wordEl.value.trim();
-        if (!word || word.length < 2 || word.length > 25) { // Min 2, Max 25
+        if (!word || word.length < 2 || word.length > 25) { // MIN_WORD_LENGTH e MAX_WORD_LENGTH
           showToast(`Palavra ${i+1} inválida (2-25 caracteres).`, "error"); return;
         }
         words.push(word);
@@ -468,11 +479,13 @@
       const msgInputEl = getElement("chat-message-input");
       if(!msgInputEl) return;
       const message = msgInputEl.value.trim();
-      if (message && message.length <= 150) {
+      if (message && message.length > 0 && message.length <= 150) {
         socket.emit("chat_message", { message });
         msgInputEl.value = "";
       } else if (message.length > 150) {
         showToast("Mensagem muito longa (máx 150 caracteres).", "error");
+      } else if (!message) {
+        // Não envia toast para mensagem vazia, apenas não faz nada
       }
     }
 
@@ -488,11 +501,10 @@
         
         const playerSpan = document.createElement("span");
         playerSpan.className = "chat-player";
-        playerSpan.textContent = `${playerName}: `; // Adiciona espaço após o nome
+        playerSpan.textContent = `${playerName}: `; 
         
         msgDiv.appendChild(timeSpan);
         msgDiv.appendChild(playerSpan);
-        // Usar textContent para adicionar a mensagem previne XSS
         msgDiv.appendChild(document.createTextNode(message)); 
         
         chatBox.appendChild(msgDiv);
@@ -506,13 +518,17 @@
 
     function renderKeywordAndInitialsSharedView(viewingForPlayerName, keywordStr, initialsArray) {
         const display = getElement("keyword-initials-display");
-        if (!display) return;
+        if (!display || !keywordStr) {
+            console.error("Render Keyword/Initials: Elemento ou keyword ausente.");
+            if(display) display.innerHTML = "<p>Erro ao carregar dados das palavras.</p>";
+            return;
+        }
         
-        let html = `<p><span class="keyword-label">Palavra Chave de <span class="active-player-name">${viewingForPlayerName}</span>:</span> <span class="main-keyword">${keywordStr.toUpperCase()}</span></p>`;
+        let html = `<p><span class="keyword-label">Palavra Chave de <span class="active-player-name">${viewingForPlayerName || 'Jogador'}</span>:</span> <span class="main-keyword">${keywordStr.toUpperCase()}</span></p>`;
         if (initialsArray && initialsArray.length > 0) {
             html += `<p><span class="keyword-label">Próximas Iniciais:</span> `;
             initialsArray.forEach(initial => {
-                html += `<span class="initial-letter">${initial.toUpperCase()}</span>`;
+                html += `<span class="initial-letter">${initial ? initial.toUpperCase() : '?'}</span>`; // Fallback para inicial
             });
             html += `</p>`;
         }
@@ -521,24 +537,27 @@
 
     function renderWordProgressSlotsSharedView(allOriginalTargetWords, completedMask, activeWordIdxBeingGuessedByActivePlayer) {
         const container = getElement("word-progress-container");
-        if (!container || !allOriginalTargetWords || !completedMask) return;
+        if (!container || !allOriginalTargetWords || !completedMask) {
+             console.error("Render Progress Slots: Elemento ou dados ausentes.");
+             if(container) container.innerHTML = "Erro ao carregar progresso.";
+             return;
+        }
         container.innerHTML = ""; 
 
         allOriginalTargetWords.forEach((word, index) => {
             const slot = document.createElement("div");
             slot.classList.add("word-slot");
 
-            if (index === 0) { // Slot da Palavra Chave (dada)
-                slot.textContent = word.toUpperCase();
+            if (index === 0) { // Palavra Chave (índice 0) - sempre "completa" visualmente
+                slot.textContent = word ? word.toUpperCase() : "???";
                 slot.classList.add("revealed-keyword"); 
-            } else if (completedMask[index]) { // Palavras subsequentes que foram completadas
-                slot.textContent = word.toUpperCase();
+            } else if (completedMask[index]) { 
+                slot.textContent = word ? word.toUpperCase() : "???";
                 slot.classList.add("completed");
-            } else { // Palavras subsequentes não completadas (mostra só a inicial)
-                slot.textContent = word[0].toUpperCase();
+            } else { 
+                slot.textContent = word ? word[0].toUpperCase() : "?"; // Apenas a inicial
             }
             
-            // Se este slot é o que está ativamente sendo adivinhado (e não é a keyword)
             if (index === activeWordIdxBeingGuessedByActivePlayer && index !== 0 && !completedMask[index]) {
                 slot.classList.add("is-active-hint");
             }
@@ -549,21 +568,21 @@
     function updateTurnDisplayAndInputsSharedView(isClientActuallyPlaying, turnPlayerNameStr) {
         const turnInfoEl = getElement("turn-info-display");
         const guessInputEl = getElement("guess-input");
-        const guessButtonEl = getElement("guess-button"); // Usando ID agora
+        const guessButtonEl = getElement("guess-button"); 
 
         if (!turnInfoEl || !guessInputEl || !guessButtonEl) {
-             console.error("Elementos de UI de turno/palpite não encontrados para atualização.");
+             console.error("Elementos de UI de turno/palpite não encontrados.");
              return;
         }
         
-        const actualTurnPlayerName = turnPlayerNameStr || "Oponente"; // Fallback
+        const actualTurnPlayerName = turnPlayerNameStr || "Oponente"; 
 
         if (isClientActuallyPlaying) {
-            turnInfoEl.innerHTML = `🎯 É a sua vez, <span class="active-player-name">${currentPlayerName}</span>!`; // Usa currentPlayerName para "Você"
+            turnInfoEl.innerHTML = `🎯 É a sua vez, <span class="active-player-name">${currentPlayerName || 'Jogador'}</span>!`;
             turnInfoEl.style.color = "#48bb78";
             guessInputEl.disabled = false;
             guessButtonEl.disabled = false;
-            setTimeout(() => guessInputEl.focus(), 150); // Pequeno delay para garantir renderização
+            setTimeout(() => guessInputEl.focus(), 150); 
         } else {
             turnInfoEl.innerHTML = `Aguardando <span class="active-player-name">${actualTurnPlayerName}</span>...`;
             turnInfoEl.style.color = "#a0aec0";
@@ -572,12 +591,14 @@
         }
     }
 
-    socket.on("connected", () => showToast("Conectado ao servidor!", "success"));
-    socket.on("error", (data) => showToast(data.message || "Erro desconhecido do servidor.", "error"));
+    // --- Handlers de Eventos Socket.IO ---
+    socket.on("connected", (data) => showToast(data.message || "Conectado!", "success"));
+    socket.on("error", (data) => showToast(data.message || "Ocorreu um erro no servidor.", "error"));
 
     socket.on("joined_room", (data) => {
+      if(!data || !data.room_id) { console.error("joined_room: dados inválidos", data); return;}
       currentRoomId = data.room_id;
-      // currentPlayerName já foi definido ao enviar o evento join_game
+      // currentPlayerName foi definido ao enviar o evento join_game do cliente
       showToast(`Entrou na sala: ${data.room_id}`, "success");
       if (data.is_creator) {
         const roomCodeEl = getElement("generated-room-code");
@@ -589,48 +610,45 @@
 
     socket.on("players_update", (data) => {
       const playersListEl = getElement("players-list");
-      if(!playersListEl) return;
+      if(!playersListEl || !data || !data.players_online) return;
       playersListEl.innerHTML = "";
-      if(data.players_online){
-          data.players_online.forEach(p => {
-            const item = document.createElement("div");
-            item.className = "player-item";
-            if (p.is_current_turn) item.classList.add("current-turn"); // Baseado no estado do servidor
-            item.innerHTML = `
-              <span class="player-name">${p.name} ${p.name === currentPlayerName ? "<small>(Você)</small>" : ""}</span>
-              <span class="player-status">
-                ${p.is_current_turn ? '<span class="status-icon" title="Vez dele(a)">👉</span>' : ''}
-                ${p.words_chosen ? '<span class="status-icon" title="Palavras Prontas">✅</span>' : '<span class="status-icon" title="Escolhendo Palavras">📝</span>'}
-              </span>`;
-            playersListEl.appendChild(item);
-          });
-      }
+      data.players_online.forEach(p => {
+        const item = document.createElement("div");
+        item.className = "player-item";
+        if (p.is_current_turn) item.classList.add("current-turn");
+        item.innerHTML = `
+          <span class="player-name">${p.name || 'Jogador'} ${p.name === currentPlayerName ? "<small>(Você)</small>" : ""}</span>
+          <span class="player-status">
+            ${p.is_current_turn ? '<span class="status-icon" title="Vez dele(a)">👉</span>' : ''}
+            ${p.words_chosen ? '<span class="status-icon" title="Palavras Prontas">✅</span>' : '<span class="status-icon" title="Escolhendo Palavras">📝</span>'}
+          </span>`;
+        playersListEl.appendChild(item);
+      });
     });
     
     socket.on("start_choosing_words", (data) => {
-        // Não reseta currentPlayerName aqui, mas reseta outros estados de jogo se necessário.
-        // currentRoomId já deve estar definido.
+        // Não resetar currentPlayerName ou currentRoomId aqui
         showScreen('word-selection-section');
         createWordInputFields();
         const waitingMsgEl = getElement("waiting-for-opponent-words");
         const submitBtnEl = getElement("submit-words-button");
         if(waitingMsgEl) waitingMsgEl.classList.add("hidden");
         if(submitBtnEl) submitBtnEl.disabled = false;
-        if(data.message) showToast(data.message, "info");
+        if(data && data.message) showToast(data.message, "info");
     });
 
     socket.on("words_submitted_update", (data) => { 
-        if(data.player_name) showToast(`${data.player_name} enviou as palavras.`, "info");
-        if(data.players_online) { // Re-renderiza a lista de jogadores com o status atualizado
+        if(data && data.player_name) showToast(`${data.player_name} enviou as palavras.`, "info");
+        if(data && data.players_online) { 
              const playersListEl = getElement("players-list");
             if(!playersListEl) return;
             playersListEl.innerHTML = ""; 
              data.players_online.forEach(p => {
                 const item = document.createElement("div");
                 item.className = "player-item";
-                if (p.is_current_turn) item.classList.add("current-turn");
+                if (p.is_current_turn) item.classList.add("current-turn"); // Embora turno não definido aqui
                 item.innerHTML = `
-                <span class="player-name">${p.name} ${p.name === currentPlayerName ? "<small>(Você)</small>" : ""}</span>
+                <span class="player-name">${p.name || 'Jogador'} ${p.name === currentPlayerName ? "<small>(Você)</small>" : ""}</span>
                 <span class="player-status">
                     ${p.is_current_turn ? '<span class="status-icon" title="Vez dele(a)">👉</span>' : ''}
                     ${p.words_chosen ? '<span class="status-icon" title="Palavras Prontas">✅</span>' : '<span class="status-icon" title="Escolhendo Palavras">📝</span>'}
@@ -643,35 +661,32 @@
     socket.on("update_game_display", (data) => {
         if (!data) { console.error("update_game_display: Dados ausentes."); return; }
         
-        // Garante que a tela de jogo está visível e a de fim de jogo, escondida
         showScreen('game-screen-layout'); 
         const finishedDispEl = getElement('game-finished-display');
         if(finishedDispEl) finishedDispEl.classList.add('hidden');
 
         renderKeywordAndInitialsSharedView(
-            data.viewing_for_player_name, // Nome do jogador cuja perspectiva é mostrada
-            data.keyword_to_display,       // A palavra chave dele (1ª da lista do oponente)
-            data.initials_to_display       // Array de iniciais das palavras restantes dele
+            data.viewing_for_player_name,
+            data.keyword_to_display,
+            data.initials_to_display
         );
         renderWordProgressSlotsSharedView(
-            data.all_target_words_original_for_progress, // As 5 palavras que `viewing_for_player_name` precisa adivinhar
-            data.completed_mask_for_progress,            // Máscara de progresso dele
-            data.active_word_idx_being_guessed           // Índice (0-4) da palavra que ele está adivinhando
+            data.all_target_words_original_for_progress,
+            data.completed_mask_for_progress,
+            data.active_word_idx_being_guessed
         );
         
         const currentHintEl = getElement("current-hint-display");
         if(currentHintEl) currentHintEl.textContent = data.current_hint || "---";
         
-        // `data.actual_current_turn_player_name` é quem realmente tem a vez.
-        // `data.is_your_turn` diz se ESTE cliente é quem tem a vez.
         updateTurnDisplayAndInputsSharedView(data.is_your_turn, data.actual_current_turn_player_name);
 
         if (data.last_action_result) {
             const action = data.last_action_result;
             if (action.type === "correct_guess") {
-                showToast(`${action.by_player_name} acertou "${action.word}"!`, "success");
+                showToast(`${action.by_player_name || 'Jogador'} acertou "${action.word || 'palavra'}"!`, "success");
             } else if (action.type === "incorrect_guess") {
-                showToast(`${action.by_player_name} errou com "${action.attempted_word}". Vez de ${data.actual_current_turn_player_name || 'Oponente'}.`, "info");
+                showToast(`${action.by_player_name || 'Jogador'} errou com "${action.attempted_word || 'palpite'}". Vez de ${data.actual_current_turn_player_name || 'Oponente'}.`, "info");
             } else if (action.type === "game_start") {
                  showToast("O jogo começou! Boa sorte!", "success");
             }
@@ -679,19 +694,15 @@
     });
     
     socket.on("game_finished", (data) => {
+        if(!data || !data.message) { console.error("game_finished: Dados de finalização ausentes."); return; }
         showToast(data.message, data.winner_name === currentPlayerName ? "success" : "info");
-        let finishMsg = data.message || "Fim de Jogo!";
-        // Mostra a sequência do VENCEDOR se o jogo terminou normalmente e ele era o que estava adivinhando
-        if (data.winner_name === data.actual_current_turn_player_name && data.final_words_sequence && data.final_words_sequence.length > 0 && !data.was_disconnection) {
-           // Isso precisa de ajuste: a sequencia é do jogador que completou as palavras
-           // Se `data.final_words_sequence` é a lista de palavras que o vencedor adivinhou, está ok.
+        let finishMsg = data.message;
+        if (data.final_words_sequence && data.final_words_sequence.length > 0 && !data.was_disconnection) {
             finishMsg += ` Sequência adivinhada: ${data.final_words_sequence.join(' → ')}`;
-        } else if (data.was_disconnection) {
-            // Mensagem já deve ser informativa
         }
-
         const gameMsgEl = getElement("game-finished-message");
         const gameFinishDispEl = getElement("game-finished-display");
+
         if(gameMsgEl) gameMsgEl.textContent = finishMsg;
         if(gameFinishDispEl) gameFinishDispEl.classList.remove("hidden");
         
@@ -705,22 +716,20 @@
     });
     
     socket.on("opponent_left_game", (data) => { 
-        showToast(data.message || `${data.leaver_name || 'Oponente'} saiu.`, "warning");
-        // A lógica de game_finished já deve ter sido acionada pelo backend para o jogador restante
-        // se o jogo terminou por causa disso.
+        if(data && data.message) showToast(data.message, "warning");
+        else if (data && data.leaver_name) showToast(`${data.leaver_name} saiu.`, "warning");
+        // game_finished já deve ter sido chamado pelo backend se resultou em W.O.
     });
-    socket.on("player_left", (data)=>{ // Genérico quando alguém sai, pode ser usado para atualizar a lista de jogadores
-        if(data.player_name) showToast(`${data.player_name} saiu da sala.`, "info");
-        // A lista de jogadores será atualizada pelo players_update se necessário
+    socket.on("player_left", (data)=>{ 
+        if(data && data.player_name) showToast(`${data.player_name} saiu da sala.`, "info");
     });
 
     socket.on("game_reset_initiated", (data) => { 
-        showToast(data.message || "Novo jogo iniciado!", "info");
+        if(data && data.message) showToast(data.message, "info");
         getElement('game-finished-display')?.classList.add('hidden');
-        // A tela deve ser trocada pelo evento "start_choosing_words" que virá em seguida
     });
     socket.on("new_chat_message", (data) => { 
-      if(data.player_name && data.message && data.timestamp) {
+      if(data && data.player_name && data.message && data.timestamp) {
         addMessageToChat(data.player_name, data.message, data.timestamp);
       }
     });
@@ -729,10 +738,15 @@
       if (event.key === "Enter") {
         const activeElement = document.activeElement;
         if(!activeElement) return;
+
+        // Verifica se o modal/overlay não está ativo antes de submeter forms
+        // (Adicionar lógica de modal se necessário)
+
         if (activeElement.id === "chat-message-input") { event.preventDefault(); sendChatMessage(); }
         else if (activeElement.id === "guess-input" && !activeElement.disabled) { event.preventDefault(); sendGuess(); }
         else if (activeElement.id === "create-player-name") { event.preventDefault(); createRoom(); }
         else if (activeElement.id === "join-player-name" || activeElement.id === "join-room-code") { event.preventDefault(); joinExistingRoom(); }
+        // Não adicionar submit com Enter para múltiplos inputs de palavras (word-input-0, etc.)
       }
     });
     const joinRoomCodeInputEl = getElement("join-room-code");
