@@ -3,31 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jogo das 5 Palavras - Corrigido</title>
+  <title>Jogo das 5 Palavras Reconstruído</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0;}
+    :root {
+        --primary-color: #7f5af0; /* Roxo vibrante */
+        --secondary-color: #6c47d8; /* Roxo mais escuro para hover */
+        --success-color: #48bb78; /* Verde */
+        --warning-color: #ecc94b; /* Amarelo */
+        --info-color: #4299e1;    /* Azul */
+        --danger-color: #f56565;  /* Vermelho */
+        --light-bg: rgba(255, 255, 255, 0.97);
+        --text-dark: #2d3748;
+        --text-medium: #4a5568;
+        --text-light: #a0aec0;
+        --border-color: #cbd5e0;
+    }
     body {
       font-family: 'Inter', sans-serif;
       background: linear-gradient(135deg, #6a82fb, #fc5c7d);
-      color: #333; min-height: 100vh;
+      color: var(--text-dark); min-height: 100vh;
       display: flex; flex-direction: column; align-items: center;
       padding: 10px; font-size: 16px; 
     }
     .container { max-width: 1200px; width: 100%; }
     .section {
-      background: rgba(255, 255, 255, 0.97); 
+      background: var(--light-bg); 
       backdrop-filter: blur(3px); 
       border-radius: 12px; 
       padding: 20px; margin-bottom: 20px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.1);
     }
     .hidden { display: none !important; }
-    h1, h2, h3 { color: #4a5568; text-align: center; font-weight: 600; }
+    h1, h2, h3 { color: var(--text-medium); text-align: center; font-weight: 600; }
     h1 { margin-bottom: 25px; font-size: 2.2em; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.25); }
     h2 { margin-bottom: 20px; font-size: 1.6em; }
-    h3 { margin-bottom: 15px; font-size: 1.25em; color: #5a67d8; }
+    h3 { margin-bottom: 15px; font-size: 1.25em; color: var(--primary-color); }
 
     .game-layout { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
     @media (min-width: 800px) { .game-layout { grid-template-columns: 1fr 340px; } }
@@ -46,7 +59,7 @@
     .player-name { font-weight: 500; }
     .player-status { display: flex; gap: 8px; align-items: center; font-size: 0.9em;}
     .status-icon { font-size: 1.1em; } 
-    .player-item.current-turn { border-left-color: #48bb78; background-color: #f0fff4; }
+    .player-item.current-turn { border-left-color: var(--success-color); background-color: #f0fff4; }
 
     .chat-messages {
       height: 180px; overflow-y: auto; border: 1px solid #e2e8f0;
@@ -54,79 +67,78 @@
       font-size: 0.9em; margin-bottom: 12px;
     }
     .chat-message { margin-bottom: 10px; line-height: 1.5; word-break: break-word; }
-    .chat-timestamp { color: #a0aec0; font-size: 0.8em; margin-right: 6px; }
-    .chat-player { font-weight: 600; color: #7f5af0; }
+    .chat-timestamp { color: var(--text-light); font-size: 0.8em; margin-right: 6px; }
+    .chat-player { font-weight: 600; color: var(--primary-color); }
 
     .input-button-group { display: flex; gap: 8px; align-items: stretch; }
     .input-field {
-      flex-grow: 1; padding: 10px 14px; border: 1px solid #cbd5e0;
+      flex-grow: 1; padding: 10px 14px; border: 1px solid var(--border-color);
       border-radius: 8px; font-size: 1em; min-width: 0; direction: ltr; 
     }
     .action-button {
-      flex-shrink: 0; padding: 10px 15px; background: #7f5af0; color: white;
+      flex-shrink: 0; padding: 10px 15px; background: var(--primary-color); color: white;
       border: none; border-radius: 8px; cursor: pointer; font-size: 1em; 
       font-weight: 500; white-space: nowrap; transition: background-color 0.2s;
     }
-    .action-button:hover { background: #6c47d8; }
-    .action-button.success { background: #48bb78; }
+    .action-button:hover { background: var(--secondary-color); }
+    .action-button.success { background: var(--success-color); }
     .action-button.success:hover { background: #38a169; }
 
-
-    label { display: block; width: 100%; margin-bottom: 6px; font-weight: 600; font-size: 0.95em; color: #4a5568; }
+    label { display: block; width: 100%; margin-bottom: 6px; font-weight: 600; font-size: 0.95em; color: var(--text-medium); }
     input[type="text"].form-input { 
-      width: 100%; padding: 12px 15px; border: 1px solid #cbd5e0;
-      border-radius: 8px; margin-bottom: 18px; font-size: 1em; color: #2d3748;
+      width: 100%; padding: 12px 15px; border: 1px solid var(--border-color);
+      border-radius: 8px; margin-bottom: 18px; font-size: 1em; color: var(--text-dark);
     }
-    input[type="text"].form-input:focus { border-color: #7f5af0; box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.2); outline: none;}
+    input[type="text"].form-input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.2); outline: none;}
 
     button.general-button { 
-      background: #7f5af0; color: white; font-weight: 600; 
+      background: var(--primary-color); color: white; font-weight: 600; 
       border: none; padding: 12px 20px; border-radius: 8px;
       cursor: pointer; transition: background 0.2s, transform 0.1s;
       width: 100%; margin-bottom: 12px; font-size: 1em; text-transform: uppercase; letter-spacing: 0.5px;
     }
-    button.general-button:hover { background: #6c47d8; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    button.general-button:hover { background: var(--secondary-color); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     button.general-button:active { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     button.general-button.secondary { background: #a0aec0; }
     button.general-button.secondary:hover { background: #718096; }
-    button.general-button.success { background: #48bb78; }
+    button.general-button.success { background: var(--success-color); }
     button.general-button.success:hover { background: #38a169; }
-    button.general-button.warning { background: #ecc94b; color: #2d3748; }
+    button.general-button.warning { background: var(--warning-color); color: var(--text-dark); }
     button.general-button.warning:hover { background: #d69e2e; }
 
     .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 20px; }
      @media (min-width: 480px) { .options-grid { grid-template-columns: 1fr 1fr; } }
 
     .room-code-display {
-      background: rgba(230, 237, 255, 0.8); border: 2px dashed #7f5af0; padding: 25px;
+      background: rgba(230, 237, 255, 0.8); border: 2px dashed var(--primary-color); padding: 25px;
       text-align: center; border-radius: 10px; margin: 25px 0;
     }
     .room-code-value {
-      font-size: 2em; font-weight: 700; color: #6c47d8; letter-spacing: 3px;
+      font-size: 2em; font-weight: 700; color: var(--secondary-color); letter-spacing: 3px;
       background: white; padding: 12px 22px; border-radius: 8px; display: inline-block;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 8px 0 15px 0;
     }
-    button.copy-code-btn { background: #38b2ac; margin: 0 auto; max-width: 200px; font-size: 0.9em; padding: 10px;}
-    button.copy-code-btn:hover { background: #2c7a7b; }
+    button.copy-code-btn { background: var(--info-color); margin: 0 auto; max-width: 200px; font-size: 0.9em; padding: 10px;}
+    button.copy-code-btn:hover { background: #2c5282; } /* Azul mais escuro */
 
     .game-info { text-align: center; margin-bottom: 20px; }
-    .turn-info { font-size: 1.4em; font-weight: 600; color: #6c47d8; margin-bottom: 18px; }
-    .turn-info .active-player-name { font-weight: 700; color: #5a67d8; }
+    .turn-info { font-size: 1.4em; font-weight: 600; color: var(--secondary-color); margin-bottom: 18px; }
+    .turn-info .active-player-name { font-weight: 700; color: var(--primary-color); }
     
     .keyword-initials-display {
         background-color: rgba(240, 244, 255, 0.85); 
         padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: left; 
         border: 1px solid #d6ddeb; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    .keyword-initials-display p { margin: 8px 0; font-size: 1.1em; color: #2d3748; line-height: 1.5;}
-    .keyword-initials-display .keyword-label { font-weight: 600; color: #5a67d8; }
-    .keyword-initials-display .initial-letter { /* APENAS A LETRA, SEM UNDERLINES */
-      display: inline-block; background-color: #e2e8f0; color: #4a5568;
+    .keyword-initials-display p { margin: 8px 0; font-size: 1.1em; color: var(--text-dark); line-height: 1.5;}
+    .keyword-initials-display .keyword-label { font-weight: 600; color: var(--primary-color); }
+    .keyword-initials-display .initial-letter { /* APENAS A LETRA */
+      display: inline-block; background-color: #e2e8f0; color: var(--text-medium);
       padding: 6px 10px; border-radius: 6px; font-weight: 600; margin: 0 4px;
       min-width: 32px; text-align: center; font-size: 1em;
     }
     .keyword-initials-display .main-keyword {
-      font-weight: 700; font-size: 1.15em; color: #7f5af0; background-color: white;
+      font-weight: 700; font-size: 1.15em; color: var(--primary-color); background-color: white;
       padding: 5px 10px; border-radius: 6px;
     }
 
@@ -135,32 +147,19 @@
         margin-bottom: 25px; padding: 10px 0;
     }
     .word-slot {
-      background-color: #edf2f7; color: #718096; padding: 12px 18px; 
+      background-color: #edf2f7; color: var(--text-light); padding: 12px 18px; 
       border-radius: 8px; font-size: 1.2em; font-weight: 600;
       min-width: 55px; text-align: center; border: 2px solid #e2e8f0;
       transition: all 0.3s ease;
     }
-    .word-slot.revealed-keyword { 
-        background-color: #ebf4ff; 
-        color: #4299e1; 
-        border-color: #90cdf4; 
-        font-weight: 700; 
-    }
-    .word-slot.completed:not(.revealed-keyword) { 
-        background-color: #f0fff4; 
-        color: #38a169; 
-        border-color: #68d391; 
-        font-weight: 700; 
-    }
-    .word-slot.is-active-hint { 
-        border-color: #7f5af0; 
-        box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.4); 
-    }
+    .word-slot.revealed-keyword { background-color: #ebf4ff; color: #4299e1; border-color: #90cdf4; font-weight: 700; }
+    .word-slot.completed:not(.revealed-keyword) { background-color: #f0fff4; color: #38a169; border-color: #68d391; font-weight: 700; }
+    .word-slot.is-active-hint { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.4); }
 
-    .hint-display { 
+    .hint-display {
       font-size: 2em; font-family: monospace; background: white; padding: 18px; 
       border-radius: 10px; border: 2px solid #e2e8f0; letter-spacing: 4px; 
-      margin: 15px auto 25px auto; color: #2d3748; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      margin: 15px auto 25px auto; color: var(--text-dark); box-shadow: 0 2px 4px rgba(0,0,0,0.05);
       max-width: fit-content; 
     }
     
@@ -183,9 +182,9 @@
       transition: opacity 0.3s ease, transform 0.3s ease;
     }
     .toast-notification.show { opacity: 1; transform: translateX(0); }
-    .toast-notification.success { background: #48bb78; }
-    .toast-notification.error { background: #f56565; }
-    .toast-notification.info { background: #4299e1; }
+    .toast-notification.success { background: var(--success-color); }
+    .toast-notification.error { background: var(--danger-color); }
+    .toast-notification.info { background: var(--info-color); }
 
     @media (max-width: 800px) { 
       .game-sidebar { order: 1; }
@@ -200,9 +199,8 @@
       .keyword-initials-display .initial-letter { padding: 5px 8px; min-width: 28px; font-size: 0.9em; }
       .keyword-initials-display .main-keyword { font-size: 1.05em; }
 
-      /* Ajuste para botões e inputs empilhados no mobile */
       .input-button-group { flex-direction: column; }
-      .input-field { width: 100%; margin-bottom: 8px; /* Adiciona espaço se empilhado */ }
+      .input-field { width: 100%; margin-bottom: 8px; }
       .action-button { width: 100%; }
       
       button.general-button, button.copy-code-btn { font-size: 0.95em; padding: 12px 15px;}
@@ -216,23 +214,23 @@
     <div class="section" id="initial-section">
       <h2>Como deseja jogar?</h2>
       <div class="options-grid">
-        <button class="general-button success" onclick="showScreen('create-room-section')">🏠 Criar Nova Sala</button>
-        <button class="general-button warning" onclick="showScreen('join-room-section')">🔑 Entrar em Sala</button>
+        <button class="general-button success" id="btn-show-create">🏠 Criar Nova Sala</button>
+        <button class="general-button warning" id="btn-show-join">🔑 Entrar em Sala</button>
       </div>
     </div>
 
     <div class="section hidden" id="create-room-section">
-      <button class="general-button secondary" onclick="handleGoBackToInitial()">← Voltar</button>
+      <button class="general-button secondary" id="btn-back-to-initial-from-create">← Voltar</button>
       <h2>Criar Nova Sala</h2>
       <label for="create-player-name">Seu Nome:</label>
       <input type="text" id="create-player-name" class="form-input" placeholder="Seu nome aqui..." maxlength="20" />
-      <button class="general-button" onclick="createRoom()">Criar Sala</button>
+      <button class="general-button" id="btn-create-room-action">Criar Sala</button>
       <div id="room-created-info" class="hidden">
         <div class="room-code-display">
           <h3>🎉 Sala Criada!</h3>
           <p>Compartilhe este código com seu amigo:</p>
           <div class="room-code-value" id="generated-room-code">CÓDIGO</div>
-          <button class="general-button copy-code-btn" onclick="copyRoomCode()">📋 Copiar Código</button>
+          <button class="general-button copy-code-btn" id="btn-copy-code">📋 Copiar Código</button>
         </div>
         <div class="waiting-screen">
           <div class="waiting-animation">⏳</div>
@@ -242,21 +240,21 @@
     </div>
 
     <div class="section hidden" id="join-room-section">
-      <button class="general-button secondary" onclick="handleGoBackToInitial()">← Voltar</button>
+      <button class="general-button secondary" id="btn-back-to-initial-from-join">← Voltar</button>
       <h2>Entrar em Sala</h2>
       <label for="join-player-name">Seu Nome:</label>
       <input type="text" id="join-player-name" class="form-input" placeholder="Seu nome aqui..." maxlength="20" />
       <label for="join-room-code">Código da Sala:</label>
       <input type="text" id="join-room-code" class="form-input" placeholder="Código de 6 dígitos" maxlength="6" style="text-transform: uppercase;" />
-      <button class="general-button" onclick="joinExistingRoom()">Entrar na Sala</button>
+      <button class="general-button" id="btn-join-room-action">Entrar na Sala</button>
     </div>
 
     <div class="section hidden" id="word-selection-section">
-      <button class="general-button secondary" onclick="handleLeaveGameDuringSetup()" style="width:auto; float:left; font-size:0.8em; padding: 8px 12px; margin-bottom:10px;">Sair</button>
+      <button class="general-button secondary" id="btn-leave-during-setup" style="width:auto; float:left; font-size:0.8em; padding: 8px 12px; margin-bottom:10px;">Sair</button>
       <h2 style="clear:both;">Escolha suas 5 palavras</h2>
-      <p>Palavras com conexão semântica em sequência. (Mín 2, Máx 25 caracteres)</p>
+      <p>Conexão semântica em sequência. (Mín 2, Máx 25 caracteres)</p>
       <div id="word-inputs-container" class="word-inputs-container"></div>
-      <button id="submit-words-button" class="general-button" onclick="submitWords()">Enviar Palavras</button>
+      <button id="btn-submit-words" class="general-button">Enviar Palavras</button>
       <div id="waiting-for-opponent-words" class="waiting-screen hidden">
         <div class="waiting-animation">💬</div>
         <p><strong>Palavras enviadas! Aguardando oponente...</strong></p>
@@ -266,22 +264,22 @@
     <div class="game-layout hidden" id="game-screen-layout">
       <div class="game-main">
         <div class="section" id="game-active-section">
-           <button class="general-button secondary" id="leave-active-game-button" onclick="handleLeaveActiveGame()" style="width: auto; float: right; margin-bottom: 10px; font-size: 0.8em; padding: 8px 12px;">Sair</button>
+           <button class="general-button secondary" id="btn-leave-active-game" style="width: auto; float: right; margin-bottom: 10px; font-size: 0.8em; padding: 8px 12px;">Sair</button>
           <div class="game-info" style="clear:both;">
-            <div class="turn-info" id="turn-info-display">Carregando turno...</div>
+            <div class="turn-info" id="turn-info-display">Carregando...</div>
             <div id="keyword-initials-display" class="keyword-initials-display"></div>
             <div id="word-progress-container" class="word-progress-container"></div>
             <div class="hint-display" id="current-hint-display">_ _ _ _ _</div>
           </div>
           <div class="input-button-group" id="guess-input-group">
             <input type="text" id="guess-input" class="input-field" placeholder="Seu palpite..." disabled />
-            <button onclick="sendGuess()" class="action-button success" id="guess-button" disabled>Enviar Palpite</button>
+            <button class="action-button success" id="btn-send-guess" disabled>Enviar Palpite</button>
           </div>
           <div id="game-finished-display" class="hidden">
             <h3 id="game-finished-message">Jogo Finalizado!</h3>
             <div id="new-game-button-container">
-              <button class="general-button warning" onclick="requestNewGame()">✨ Jogar Novamente</button>
-              <button class="general-button secondary" onclick="handleGoBackToInitial()">Voltar ao Menu</button>
+              <button class="general-button warning" id="btn-request-new-game">✨ Jogar Novamente</button>
+              <button class="general-button secondary" id="btn-back-to-initial-after-game">Voltar ao Menu</button>
             </div>
           </div>
         </div>
@@ -296,7 +294,7 @@
           <div class="chat-messages" id="chat-messages-box"></div>
           <div class="input-button-group" id="chat-input-group">
             <input type="text" id="chat-message-input" class="input-field" placeholder="Mensagem..." maxlength="100" />
-            <button onclick="sendChatMessage()" class="action-button" id="chat-send-button">Enviar</button>
+            <button class="action-button" id="btn-send-chat">Enviar</button>
           </div>
         </div>
       </div>
@@ -304,460 +302,329 @@
   </div>
 
 <script>
-    // INÍCIO DO BLOCO SCRIPT - VERIFIQUE ESTA PARTE COM ATENÇÃO
-    const socket = io(); 
-    let currentPlayerName = ''; 
-    let currentRoomId = '';
-    const NUM_WORDS_TOTAL = 5; 
+    document.addEventListener('DOMContentLoaded', () => {
+        const socket = io(); 
+        let localPlayerName = ''; 
+        let localRoomId = '';
+        const NUM_WORDS = 5; 
 
-    const allScreenIds = [
-      "initial-section", "create-room-section", "join-room-section",
-      "word-selection-section", "game-screen-layout"
-    ]; // Ponto e vírgula aqui é bom.
+        const screens = {
+            initial: getElementById_Checked("initial-section"),
+            createRoom: getElementById_Checked("create-room-section"),
+            joinRoom: getElementById_Checked("join-room-section"),
+            wordSelection: getElementById_Checked("word-selection-section"),
+            gameLayout: getElementById_Checked("game-screen-layout")
+        };
+        const roomCreatedInfoEl = getElementById_Checked("room-created-info");
+        const createPlayerNameInput = getElementById_Checked("create-player-name");
+        const joinPlayerNameInput = getElementById_Checked("join-player-name");
+        const joinRoomCodeInput = getElementById_Checked("join-room-code");
+        const generatedRoomCodeEl = getElementById_Checked("generated-room-code");
+        const wordInputsContainerEl = getElementById_Checked("word-inputs-container");
+        const waitingForOpponentWordsEl = getElementById_Checked("waiting-for-opponent-words");
+        const submitWordsBtn = getElementById_Checked("btn-submit-words");
+        const playersListEl = getElementById_Checked("players-list");
+        const turnInfoDisplayEl = getElementById_Checked("turn-info-display");
+        const keywordInitialsDisplayEl = getElementById_Checked("keyword-initials-display");
+        const wordProgressContainerEl = getElementById_Checked("word-progress-container");
+        const currentHintDisplayEl = getElementById_Checked("current-hint-display");
+        const guessInputEl = getElementById_Checked("guess-input");
+        const sendGuessBtn = getElementById_Checked("btn-send-guess");
+        const gameFinishedDisplayEl = getElementById_Checked("game-finished-display");
+        const gameFinishedMessageEl = getElementById_Checked("game-finished-message");
+        const chatMessagesBoxEl = getElementById_Checked("chat-messages-box");
+        const chatMessageInputEl = getElementById_Checked("chat-message-input");
 
-    function getElement(id) { // Definição correta
-        return document.getElementById(id); 
-    } // Ponto e vírgula opcional, mas não prejudica.
+        function getElementById_Checked(id) {
+            const el = document.getElementById(id);
+            if (!el) console.error(`Elemento com ID '${id}' não encontrado.`);
+            return el;
+        }
 
-    function showScreen(screenIdToShow) { // Definição correta
-      allScreenIds.forEach(id => {
-          const el = getElement(id);
-          if(el) el.classList.add("hidden");
-      });
-      const screenEl = getElement(screenIdToShow);
-      if(screenEl) screenEl.classList.remove("hidden");
-      
-      if (screenIdToShow === 'create-room-section') { 
-        const roomInfoEl = getElement('room-created-info');
-        if(roomInfoEl) roomInfoEl.classList.add('hidden');
-        const createNameEl = getElement('create-player-name');
-        if(createNameEl) createNameEl.value = '';
-      } else if (screenIdToShow === 'join-room-section') {
-        const joinNameEl = getElement('join-player-name');
-        const joinCodeEl = getElement('join-room-code');
-        if(joinNameEl) joinNameEl.value = '';
-        if(joinCodeEl) joinCodeEl.value = '';
-      }
-      const finishedDispEl = getElement('game-finished-display');
-      if(finishedDispEl) finishedDispEl.classList.add('hidden'); 
-    } // Fim da função showScreen
+        function showScreenUI(screenKey) {
+            for (const key in screens) {
+                screens[key]?.classList.add("hidden");
+            }
+            screens[screenKey]?.classList.remove("hidden");
 
-    function showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `toast-notification ${type}`;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-        requestAnimationFrame(() => {
+            if (screenKey === 'createRoom') { 
+                roomCreatedInfoEl?.classList.add('hidden');
+                if(createPlayerNameInput) createPlayerNameInput.value = localPlayerName; // Pre-fill
+            } else if (screenKey === 'joinRoom') {
+                if(joinPlayerNameInput) joinPlayerNameInput.value = localPlayerName; // Pre-fill
+                if(joinRoomCodeInput) joinRoomCodeInput.value = '';
+            }
+            gameFinishedDisplayEl?.classList.add('hidden'); 
+        }
+        
+        function showToastUI(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
             requestAnimationFrame(() => {
-                 toast.classList.add('show');
+                requestAnimationFrame(() => { toast.classList.add('show'); });
             });
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, { once: true });
+            }, 3000 + (message.length * 20));
+        }
+
+        function resetLocalGameVisualState() {
+            localRoomId = ''; // Não reseta localPlayerName
+            playersListEl?.innerHTML = "";
+            chatMessagesBoxEl?.innerHTML = "";
+            wordProgressContainerEl?.innerHTML = "";
+            keywordInitialsDisplayEl?.innerHTML = "";
+            if(currentHintDisplayEl) currentHintDisplayEl.textContent = "_ _ _ _ _";
+            gameFinishedDisplayEl?.classList.add('hidden');
+        }
+
+        // --- Event Handlers for UI Buttons ---
+        getElementById_Checked("btn-show-create")?.addEventListener('click', () => showScreenUI('createRoom'));
+        getElementById_Checked("btn-show-join")?.addEventListener('click', () => showScreenUI('joinRoom'));
+        getElementById_Checked("btn-back-to-initial-from-create")?.addEventListener('click', () => {
+            socket.emit("player_leaving_room"); resetLocalGameVisualState(); showScreenUI('initial');
         });
-        setTimeout(() => {
-            toast.classList.remove('show');
-            toast.addEventListener('transitionend', () => {
-                 if (toast.parentNode) toast.parentNode.removeChild(toast);
-            }, { once: true });
-        }, 3000 + (message.length * 25));
-    }
-
-    function copyRoomCode() {
-      const roomCodeEl = getElement("generated-room-code");
-      if(!roomCodeEl) { showToast("Erro: Elemento do código da sala não encontrado.", "error"); return; }
-      const roomCode = roomCodeEl.textContent;
-      if (!roomCode || roomCode === "CÓDIGO") { showToast("Código da sala ainda não gerado.", "info"); return;}
-      navigator.clipboard.writeText(roomCode)
-        .then(() => showToast("Código copiado! 📋", "success"))
-        .catch(err => {
-            console.error("Erro ao copiar para clipboard:", err);
-            showToast("Erro ao copiar. Tente manualmente: " + roomCode, "error");
+        getElementById_Checked("btn-back-to-initial-from-join")?.addEventListener('click', () => {
+             socket.emit("player_leaving_room"); resetLocalGameVisualState(); showScreenUI('initial');
         });
-    }
-    
-    function resetLocalGameState(){
-        currentRoomId = ''; // Mantém currentPlayerName para preenchimento automático
-        getElement("players-list")?.innerHTML = "";
-        getElement("chat-messages-box")?.innerHTML = "";
-        getElement("word-progress-container")?.innerHTML = "";
-        getElement("keyword-initials-display")?.innerHTML = "";
-        const currentHintEl = getElement("current-hint-display");
-        if(currentHintEl) currentHintEl.textContent = "_ _ _ _ _";
-        getElement('game-finished-display')?.classList.add('hidden');
-    }
+        getElementById_Checked("btn-leave-during-setup")?.addEventListener('click', () => {
+            if(localRoomId) socket.emit("player_leaving_room"); resetLocalGameVisualState(); showScreenUI('initial');
+        });
+        getElementById_Checked("btn-leave-active-game")?.addEventListener('click', () => {
+            if (localRoomId && confirm("Sair da partida? O oponente vencerá se estiver sozinho.")) {
+                socket.emit("player_leaving_room"); resetLocalGameVisualState(); showScreenUI('initial');
+            }
+        });
+        getElementById_Checked("btn-back-to-initial-after-game")?.addEventListener('click', () => {
+             resetLocalGameVisualState(); showScreenUI('initial'); // Sala já deve estar "morta" ou resetada
+        });
 
-    function handleGoBackToInitial() {
-        if (currentRoomId) { 
-            socket.emit("player_initiated_leave");
-        }
-        resetLocalGameState(); // Reseta estado local
-        showScreen('initial-section');
-    }
-    
-    function handleLeaveGameDuringSetup(){ 
-        if(currentRoomId){ 
-            socket.emit("player_initiated_leave");
-        }
-        resetLocalGameState();
-        showScreen('initial-section');
-    }
-    function handleLeaveActiveGame(){ 
-        if (currentRoomId && confirm("Tem certeza que deseja sair da partida?")) {
-            socket.emit("player_initiated_leave");
-            resetLocalGameState(); 
-            showScreen('initial-section'); 
-        }
-    }
+        getElementById_Checked("btn-create-room-action")?.addEventListener('click', () => {
+            if(!createPlayerNameInput) return;
+            localPlayerName = createPlayerNameInput.value.trim();
+            if (!localPlayerName || localPlayerName.length < 2 || localPlayerName.length > 20) {
+                showToastUI("Nome inválido (2-20 caracteres).", "error"); return;
+            }
+            socket.emit("create_or_join_room", { name: localPlayerName });
+        });
 
-    function createRoom() {
-      const nameInput = getElement("create-player-name");
-      if(!nameInput) return;
-      currentPlayerName = nameInput.value.trim(); // Define currentPlayerName globalmente
-      if (!currentPlayerName || currentPlayerName.length < 2 || currentPlayerName.length > 20) {
-        showToast("Nome inválido (2-20 caracteres).", "error"); return;
-      }
-      socket.emit("join_game", { player_name: currentPlayerName });
-    }
-
-    function joinExistingRoom() {
-      const nameInput = getElement("join-player-name");
-      const codeInput = getElement("join-room-code");
-      if(!nameInput || !codeInput) return;
-
-      currentPlayerName = nameInput.value.trim(); // Define currentPlayerName globalmente
-      const tempRoomId = codeInput.value.trim().toUpperCase(); 
-
-      if (!currentPlayerName || currentPlayerName.length < 2 || currentPlayerName.length > 20) {
-        showToast("Nome inválido (2-20 caracteres).", "error"); return;
-      }
-      if (!tempRoomId || tempRoomId.length !== 6) { 
-        showToast("Código da sala inválido (6 caracteres).", "error"); return;
-      }
-      socket.emit("join_game", { player_name: currentPlayerName, room_id: tempRoomId });
-    }
-
-    function createWordInputFields() {
-      const container = getElement("word-inputs-container");
-      if(!container) return;
-      container.innerHTML = ''; // Limpa inputs anteriores
-      for (let i = 0; i < NUM_WORDS_TOTAL; i++) { // Usa NUM_WORDS_TOTAL
-        const input = document.createElement("input");
-        input.type = "text";
-        input.classList.add("form-input"); 
-        input.placeholder = `Palavra ${i + 1}`;
-        input.id = `word-input-${i}`;
-        input.maxLength = 25; // MAX_WORD_LENGTH do backend
-        container.appendChild(input);
-      }
-    }
-
-    function submitWords() {
-      const words = [];
-      const submitBtn = getElement("submit-words-button");
-      for (let i = 0; i < NUM_WORDS_TOTAL; i++) {
-        const wordEl = getElement(`word-input-${i}`);
-        if(!wordEl) { showToast(`Erro interno: Input ${i+1} não encontrado.`, "error"); return; }
-        const word = wordEl.value.trim();
-        if (!word || word.length < 2 || word.length > 25) { // MIN_WORD_LENGTH e MAX_WORD_LENGTH
-          showToast(`Palavra ${i+1} inválida (2-25 caracteres).`, "error"); return;
-        }
-        words.push(word);
-      }
-      socket.emit("submit_words", { words });
-      getElement("waiting-for-opponent-words")?.classList.remove("hidden");
-      if(submitBtn) submitBtn.disabled = true; 
-    }
-
-    function sendGuess() {
-      const guessInputEl = getElement("guess-input");
-      if(!guessInputEl || guessInputEl.disabled) return;
-      const guess = guessInputEl.value.trim();
-      if (!guess) { showToast("Digite um palpite!", "info"); return; }
-      socket.emit("make_guess", { guess });
-      guessInputEl.value = "";
-    }
-    
-    function sendChatMessage() {
-      const msgInputEl = getElement("chat-message-input");
-      if(!msgInputEl) return;
-      const message = msgInputEl.value.trim();
-      if (message && message.length > 0 && message.length <= 150) {
-        socket.emit("chat_message", { message });
-        msgInputEl.value = "";
-      } else if (message.length > 150) {
-        showToast("Mensagem muito longa (máx 150 caracteres).", "error");
-      } else if (!message) {
-        // Não envia toast para mensagem vazia, apenas não faz nada
-      }
-    }
-
-    function addMessageToChat(playerName, message, timestamp) {
-        const chatBox = getElement("chat-messages-box");
-        if(!chatBox) return;
-        const msgDiv = document.createElement("div");
-        msgDiv.classList.add("chat-message");
+        getElementById_Checked("btn-join-room-action")?.addEventListener('click', () => {
+            if(!joinPlayerNameInput || !joinRoomCodeInput) return;
+            localPlayerName = joinPlayerNameInput.value.trim();
+            const roomIdToJoin = joinRoomCodeInput.value.trim().toUpperCase();
+            if (!localPlayerName || localPlayerName.length < 2 || localPlayerName.length > 20) {
+                showToastUI("Nome inválido (2-20 caracteres).", "error"); return;
+            }
+            if (!roomIdToJoin || roomIdToJoin.length !== 6) { 
+                showToastUI("Código da sala inválido (6 caracteres).", "error"); return;
+            }
+            socket.emit("create_or_join_room", { name: localPlayerName, room_id: roomIdToJoin });
+        });
         
-        const timeSpan = document.createElement("span");
-        timeSpan.className = "chat-timestamp";
-        timeSpan.textContent = `[${timestamp}]`;
-        
-        const playerSpan = document.createElement("span");
-        playerSpan.className = "chat-player";
-        playerSpan.textContent = `${playerName}: `; 
-        
-        msgDiv.appendChild(timeSpan);
-        msgDiv.appendChild(playerSpan);
-        msgDiv.appendChild(document.createTextNode(message)); 
-        
-        chatBox.appendChild(msgDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-    
-    function requestNewGame() { 
-        socket.emit("request_new_game", {});
-        getElement('game-finished-display')?.classList.add('hidden'); 
-    }
+        getElementById_Checked("btn-copy-code")?.addEventListener('click', () => {
+            if(!generatedRoomCodeEl) return;
+            const roomCode = generatedRoomCodeEl.textContent;
+            if (!roomCode || roomCode === "CÓDIGO") { showToastUI("Código ainda não gerado.", "info"); return;}
+            navigator.clipboard.writeText(roomCode)
+                .then(() => showToastUI("Código copiado!", "success"))
+                .catch(() => showToastUI("Erro ao copiar. Código: " + roomCode, "error"));
+        });
 
-    function renderKeywordAndInitialsSharedView(viewingForPlayerName, keywordStr, initialsArray) {
-        const display = getElement("keyword-initials-display");
-        if (!display || !keywordStr) {
-            console.error("Render Keyword/Initials: Elemento ou keyword ausente.");
-            if(display) display.innerHTML = "<p>Erro ao carregar dados das palavras.</p>";
-            return;
-        }
+        getElementById_Checked("btn-submit-words")?.addEventListener('click', () => {
+            const words = [];
+            for (let i = 0; i < NUM_WORDS; i++) {
+                const wordEl = getElementById_Checked(`word-input-${i}`);
+                if(!wordEl) { showToastUI(`Input ${i+1} não encontrado.`, "error"); return; }
+                const word = wordEl.value.trim();
+                if (!word || word.length < 2 || word.length > 25) {
+                    showToastUI(`Palavra ${i+1} inválida (2-25 chars).`, "error"); return;
+                }
+                words.push(word);
+            }
+            socket.emit("submit_player_words", { words });
+            waitingForOpponentWordsEl?.classList.remove("hidden");
+            if(submitWordsBtn) submitWordsBtn.disabled = true; 
+        });
+
+        getElementById_Checked("btn-send-guess")?.addEventListener('click', () => {
+            if(!guessInputEl || guessInputEl.disabled) return;
+            const guess = guessInputEl.value.trim();
+            if (!guess) { showToastUI("Digite um palpite!", "info"); return; }
+            socket.emit("player_guess", { guess });
+            guessInputEl.value = "";
+        });
         
-        let html = `<p><span class="keyword-label">Palavra Chave de <span class="active-player-name">${viewingForPlayerName || 'Jogador'}</span>:</span> <span class="main-keyword">${keywordStr.toUpperCase()}</span></p>`;
-        if (initialsArray && initialsArray.length > 0) {
-            html += `<p><span class="keyword-label">Próximas Iniciais:</span> `;
-            initialsArray.forEach(initial => {
-                html += `<span class="initial-letter">${initial ? initial.toUpperCase() : '?'}</span>`; // Fallback para inicial
+        getElementById_Checked("btn-send-chat")?.addEventListener('click', () => {
+            if(!chatMessageInputEl) return;
+            const message = chatMessageInputEl.value.trim();
+            if (message && message.length > 0 && message.length <= 150) {
+                socket.emit("send_chat_message", { message });
+                chatMessageInputEl.value = "";
+            } else if (message.length > 150) { showToastUI("Mensagem longa (máx 150).", "error");}
+        });
+        
+        getElementById_Checked("btn-request-new-game")?.addEventListener('click', () => {
+            socket.emit("request_play_again", {});
+            gameFinishedDisplayEl?.classList.add('hidden'); 
+        });
+
+        if(joinRoomCodeInput) {
+            joinRoomCodeInput.addEventListener("input", function(event) {
+                event.target.value = event.target.value.toUpperCase();
             });
-            html += `</p>`;
         }
-        display.innerHTML = html;
-    }
-
-    function renderWordProgressSlotsSharedView(allOriginalTargetWords, completedMask, activeWordIdxBeingGuessedByActivePlayer) {
-        const container = getElement("word-progress-container");
-        if (!container || !allOriginalTargetWords || !completedMask) {
-             console.error("Render Progress Slots: Elemento ou dados ausentes.");
-             if(container) container.innerHTML = "Erro ao carregar progresso.";
-             return;
-        }
-        container.innerHTML = ""; 
-
-        allOriginalTargetWords.forEach((word, index) => {
-            const slot = document.createElement("div");
-            slot.classList.add("word-slot");
-
-            if (index === 0) { // Palavra Chave (índice 0) - sempre "completa" visualmente
-                slot.textContent = word ? word.toUpperCase() : "???";
-                slot.classList.add("revealed-keyword"); 
-            } else if (completedMask[index]) { 
-                slot.textContent = word ? word.toUpperCase() : "???";
-                slot.classList.add("completed");
-            } else { 
-                slot.textContent = word ? word[0].toUpperCase() : "?"; // Apenas a inicial
-            }
-            
-            if (index === activeWordIdxBeingGuessedByActivePlayer && index !== 0 && !completedMask[index]) {
-                slot.classList.add("is-active-hint");
-            }
-            container.appendChild(slot);
+        document.addEventListener("keypress", function(event) {
+          if (event.key === "Enter") {
+            const ae = document.activeElement;
+            if(!ae) return;
+            if (ae.id === "chat-message-input") { event.preventDefault(); getElementById_Checked("btn-send-chat")?.click(); }
+            else if (ae.id === "guess-input" && !ae.disabled) { event.preventDefault(); getElementById_Checked("btn-send-guess")?.click(); }
+            else if (ae.id === "create-player-name") { event.preventDefault(); getElementById_Checked("btn-create-room-action")?.click();}
+            else if (ae.id === "join-player-name" || ae.id === "join-room-code") { event.preventDefault(); getElementById_Checked("btn-join-room-action")?.click(); }
+          }
         });
-    }
-
-    function updateTurnDisplayAndInputsSharedView(isClientActuallyPlaying, turnPlayerNameStr) {
-        const turnInfoEl = getElement("turn-info-display");
-        const guessInputEl = getElement("guess-input");
-        const guessButtonEl = getElement("guess-button"); 
-
-        if (!turnInfoEl || !guessInputEl || !guessButtonEl) {
-             console.error("Elementos de UI de turno/palpite não encontrados.");
-             return;
+        
+        function createWordInputFieldsUI() {
+          if(!wordInputsContainerEl) return;
+          wordInputsContainerEl.innerHTML = ''; 
+          for (let i = 0; i < NUM_WORDS; i++) {
+            const input = document.createElement("input");
+            input.type = "text"; input.classList.add("form-input"); 
+            input.placeholder = `Palavra ${i + 1}`; input.id = `word-input-${i}`;
+            input.maxLength = 25; 
+            wordInputsContainerEl.appendChild(input);
+          }
         }
         
-        const actualTurnPlayerName = turnPlayerNameStr || "Oponente"; 
-
-        if (isClientActuallyPlaying) {
-            turnInfoEl.innerHTML = `🎯 É a sua vez, <span class="active-player-name">${currentPlayerName || 'Jogador'}</span>!`;
-            turnInfoEl.style.color = "#48bb78";
-            guessInputEl.disabled = false;
-            guessButtonEl.disabled = false;
-            setTimeout(() => guessInputEl.focus(), 150); 
-        } else {
-            turnInfoEl.innerHTML = `Aguardando <span class="active-player-name">${actualTurnPlayerName}</span>...`;
-            turnInfoEl.style.color = "#a0aec0";
-            guessInputEl.disabled = true;
-            guessButtonEl.disabled = true;
+        function renderKeywordAndInitialsUI(playerName, keyword, initials) {
+            if (!keywordInitialsDisplayEl || !keyword) return;
+            let html = `<p><span class="keyword-label">Palavra Chave de <span class="active-player-name">${playerName}</span>:</span> <span class="main-keyword">${keyword.toUpperCase()}</span></p>`;
+            if (initials && initials.length > 0) {
+                html += `<p><span class="keyword-label">Próximas Iniciais:</span> ${initials.map(i => `<span class="initial-letter">${i.toUpperCase()}</span>`).join(' ')}</p>`;
+            }
+            keywordInitialsDisplayEl.innerHTML = html;
         }
-    }
 
-    // --- Handlers de Eventos Socket.IO ---
-    socket.on("connected", (data) => showToast(data.message || "Conectado!", "success"));
-    socket.on("error", (data) => showToast(data.message || "Ocorreu um erro no servidor.", "error"));
+        function renderWordProgressUI(targetWords, completedMask, activeIdx) {
+            if (!wordProgressContainerEl || !targetWords || !completedMask) return;
+            wordProgressContainerEl.innerHTML = ""; 
+            targetWords.forEach((word, index) => {
+                const slot = document.createElement("div");
+                slot.classList.add("word-slot");
+                if (index === 0) { slot.textContent = word.toUpperCase(); slot.classList.add("revealed-keyword"); }
+                else if (completedMask[index]) { slot.textContent = word.toUpperCase(); slot.classList.add("completed");}
+                else { slot.textContent = word[0].toUpperCase(); }
+                if (index === activeIdx && index !== 0 && !completedMask[index]) slot.classList.add("is-active-hint");
+                wordProgressContainerEl.appendChild(slot);
+            });
+        }
 
-    socket.on("joined_room", (data) => {
-      if(!data || !data.room_id) { console.error("joined_room: dados inválidos", data); return;}
-      currentRoomId = data.room_id;
-      // currentPlayerName foi definido ao enviar o evento join_game do cliente
-      showToast(`Entrou na sala: ${data.room_id}`, "success");
-      if (data.is_creator) {
-        const roomCodeEl = getElement("generated-room-code");
-        const roomInfoEl = getElement("room-created-info");
-        if(roomCodeEl) roomCodeEl.textContent = data.room_id;
-        if(roomInfoEl) roomInfoEl.classList.remove("hidden");
-      }
-    });
+        function updateTurnDisplayUI(isMyTurn, turnPlayerName) {
+            if (!turnInfoDisplayEl || !guessInputEl || !sendGuessBtn) return;
+            const nameToShow = turnPlayerName || "Oponente";
+            if (isMyTurn) {
+                turnInfoDisplayEl.innerHTML = `🎯 É a sua vez, <span class="active-player-name">${localPlayerName}</span>!`;
+                turnInfoDisplayEl.style.color = "var(--success-color)";
+                guessInputEl.disabled = false; sendGuessBtn.disabled = false;
+                setTimeout(() => guessInputEl.focus(), 100);
+            } else {
+                turnInfoDisplayEl.innerHTML = `Aguardando <span class="active-player-name">${nameToShow}</span>...`;
+                turnInfoDisplayEl.style.color = "var(--text-light)";
+                guessInputEl.disabled = true; sendGuessBtn.disabled = true;
+            }
+        }
 
-    socket.on("players_update", (data) => {
-      const playersListEl = getElement("players-list");
-      if(!playersListEl || !data || !data.players_online) return;
-      playersListEl.innerHTML = "";
-      data.players_online.forEach(p => {
-        const item = document.createElement("div");
-        item.className = "player-item";
-        if (p.is_current_turn) item.classList.add("current-turn");
-        item.innerHTML = `
-          <span class="player-name">${p.name || 'Jogador'} ${p.name === currentPlayerName ? "<small>(Você)</small>" : ""}</span>
-          <span class="player-status">
-            ${p.is_current_turn ? '<span class="status-icon" title="Vez dele(a)">👉</span>' : ''}
-            ${p.words_chosen ? '<span class="status-icon" title="Palavras Prontas">✅</span>' : '<span class="status-icon" title="Escolhendo Palavras">📝</span>'}
-          </span>`;
-        playersListEl.appendChild(item);
-      });
-    });
-    
-    socket.on("start_choosing_words", (data) => {
-        // Não resetar currentPlayerName ou currentRoomId aqui
-        showScreen('word-selection-section');
-        createWordInputFields();
-        const waitingMsgEl = getElement("waiting-for-opponent-words");
-        const submitBtnEl = getElement("submit-words-button");
-        if(waitingMsgEl) waitingMsgEl.classList.add("hidden");
-        if(submitBtnEl) submitBtnEl.disabled = false;
-        if(data && data.message) showToast(data.message, "info");
-    });
+        // --- Socket.IO Event Listeners ---
+        socket.on("connected_to_server", (data) => showToastUI(data.message, "success"));
+        socket.on("error_event", (data) => showToastUI(data.message, "error"));
 
-    socket.on("words_submitted_update", (data) => { 
-        if(data && data.player_name) showToast(`${data.player_name} enviou as palavras.`, "info");
-        if(data && data.players_online) { 
-             const playersListEl = getElement("players-list");
-            if(!playersListEl) return;
-            playersListEl.innerHTML = ""; 
-             data.players_online.forEach(p => {
+        socket.on("joined_room_success", (data) => {
+            localRoomId = data.room_id; // localPlayerName já definido
+            showToastUI(`Entrou na sala: ${localRoomId}`, "success");
+            if (getElementById_Checked("create-room-section").offsetParent !== null) { // Checa se está visível
+                if(generatedRoomCodeEl) generatedRoomCodeEl.textContent = localRoomId;
+                roomCreatedInfoEl?.classList.remove("hidden");
+            }
+        });
+
+        socket.on("players_update", (data) => {
+            if(!playersListEl || !data || !data.players) return;
+            playersListEl.innerHTML = "";
+            data.players.forEach(p => {
                 const item = document.createElement("div");
                 item.className = "player-item";
-                if (p.is_current_turn) item.classList.add("current-turn"); // Embora turno não definido aqui
-                item.innerHTML = `
-                <span class="player-name">${p.name || 'Jogador'} ${p.name === currentPlayerName ? "<small>(Você)</small>" : ""}</span>
-                <span class="player-status">
-                    ${p.is_current_turn ? '<span class="status-icon" title="Vez dele(a)">👉</span>' : ''}
-                    ${p.words_chosen ? '<span class="status-icon" title="Palavras Prontas">✅</span>' : '<span class="status-icon" title="Escolhendo Palavras">📝</span>'}
-                </span>`;
+                if (p.is_turn) item.classList.add("current-turn");
+                item.innerHTML = `<span class="player-name">${p.name} ${p.name === localPlayerName ? "<small>(Você)</small>" : ""}</span>
+                                  <span class="player-status">
+                                    ${p.is_turn ? '<span class="status-icon">👉</span>' : ''}
+                                    ${p.ready ? '<span class="status-icon">✅</span>' : '<span class="status-icon">📝</span>'}
+                                  </span>`;
                 playersListEl.appendChild(item);
             });
-        }
-    });
-
-    socket.on("update_game_display", (data) => {
-        if (!data) { console.error("update_game_display: Dados ausentes."); return; }
-        
-        showScreen('game-screen-layout'); 
-        const finishedDispEl = getElement('game-finished-display');
-        if(finishedDispEl) finishedDispEl.classList.add('hidden');
-
-        renderKeywordAndInitialsSharedView(
-            data.viewing_for_player_name,
-            data.keyword_to_display,
-            data.initials_to_display
-        );
-        renderWordProgressSlotsSharedView(
-            data.all_target_words_original_for_progress,
-            data.completed_mask_for_progress,
-            data.active_word_idx_being_guessed
-        );
-        
-        const currentHintEl = getElement("current-hint-display");
-        if(currentHintEl) currentHintEl.textContent = data.current_hint || "---";
-        
-        updateTurnDisplayAndInputsSharedView(data.is_your_turn, data.actual_current_turn_player_name);
-
-        if (data.last_action_result) {
-            const action = data.last_action_result;
-            if (action.type === "correct_guess") {
-                showToast(`${action.by_player_name || 'Jogador'} acertou "${action.word || 'palavra'}"!`, "success");
-            } else if (action.type === "incorrect_guess") {
-                showToast(`${action.by_player_name || 'Jogador'} errou com "${action.attempted_word || 'palpite'}". Vez de ${data.actual_current_turn_player_name || 'Oponente'}.`, "info");
-            } else if (action.type === "game_start") {
-                 showToast("O jogo começou! Boa sorte!", "success");
-            }
-        }
-    });
-    
-    socket.on("game_finished", (data) => {
-        if(!data || !data.message) { console.error("game_finished: Dados de finalização ausentes."); return; }
-        showToast(data.message, data.winner_name === currentPlayerName ? "success" : "info");
-        let finishMsg = data.message;
-        if (data.final_words_sequence && data.final_words_sequence.length > 0 && !data.was_disconnection) {
-            finishMsg += ` Sequência adivinhada: ${data.final_words_sequence.join(' → ')}`;
-        }
-        const gameMsgEl = getElement("game-finished-message");
-        const gameFinishDispEl = getElement("game-finished-display");
-
-        if(gameMsgEl) gameMsgEl.textContent = finishMsg;
-        if(gameFinishDispEl) gameFinishDispEl.classList.remove("hidden");
-        
-        const guessInputEl = getElement("guess-input");
-        const guessButtonEl = getElement("guess-button");
-        if(guessInputEl) guessInputEl.disabled = true;
-        if(guessButtonEl) guessButtonEl.disabled = true;
-        
-        const hintDispEl = getElement("current-hint-display");
-        if(hintDispEl) hintDispEl.textContent = "FIM DE JOGO";
-    });
-    
-    socket.on("opponent_left_game", (data) => { 
-        if(data && data.message) showToast(data.message, "warning");
-        else if (data && data.leaver_name) showToast(`${data.leaver_name} saiu.`, "warning");
-        // game_finished já deve ter sido chamado pelo backend se resultou em W.O.
-    });
-    socket.on("player_left", (data)=>{ 
-        if(data && data.player_name) showToast(`${data.player_name} saiu da sala.`, "info");
-    });
-
-    socket.on("game_reset_initiated", (data) => { 
-        if(data && data.message) showToast(data.message, "info");
-        getElement('game-finished-display')?.classList.add('hidden');
-    });
-    socket.on("new_chat_message", (data) => { 
-      if(data && data.player_name && data.message && data.timestamp) {
-        addMessageToChat(data.player_name, data.message, data.timestamp);
-      }
-    });
-
-    document.addEventListener("keypress", function(event) {
-      if (event.key === "Enter") {
-        const activeElement = document.activeElement;
-        if(!activeElement) return;
-
-        // Verifica se o modal/overlay não está ativo antes de submeter forms
-        // (Adicionar lógica de modal se necessário)
-
-        if (activeElement.id === "chat-message-input") { event.preventDefault(); sendChatMessage(); }
-        else if (activeElement.id === "guess-input" && !activeElement.disabled) { event.preventDefault(); sendGuess(); }
-        else if (activeElement.id === "create-player-name") { event.preventDefault(); createRoom(); }
-        else if (activeElement.id === "join-player-name" || activeElement.id === "join-room-code") { event.preventDefault(); joinExistingRoom(); }
-        // Não adicionar submit com Enter para múltiplos inputs de palavras (word-input-0, etc.)
-      }
-    });
-    const joinRoomCodeInputEl = getElement("join-room-code");
-    if(joinRoomCodeInputEl) {
-        joinRoomCodeInputEl.addEventListener("input", function(event) {
-            event.target.value = event.target.value.toUpperCase();
         });
-    }
+        
+        socket.on("all_players_joined_choose_words", () => {
+            showScreenUI('wordSelection');
+            createWordInputFieldsUI();
+            waitingForOpponentWordsEl?.classList.add("hidden");
+            if(submitWordsBtn) submitWordsBtn.disabled = false;
+            showToastUI("Ambos jogadores entraram. Escolham suas palavras!", "info");
+        });
 
-    // Inicializa na primeira tela
-    showScreen("initial-section");
-  </script>
+        socket.on("game_view_update", (data) => {
+            if (!data) { console.error("game_view_update: Dados ausentes."); return; }
+            showScreenUI('gameLayout'); 
+            gameFinishedDisplayEl?.classList.add('hidden');
+
+            renderKeywordAndInitialsUI(data.active_player_display_name, data.keyword_for_display, data.initials_for_display);
+            renderWordProgressUI(data.all_target_words_for_progress_slots, data.completed_mask_for_progress_slots, data.active_word_idx_for_hint);
+            if(currentHintDisplayEl) currentHintDisplayEl.textContent = data.main_hint_for_active_word || "---";
+            updateTurnDisplayUI(data.is_your_turn, data.actual_current_turn_player_name);
+
+            if (data.last_action) {
+                const la = data.last_action;
+                if (la.type === "correct") showToastUI(`${la.player} acertou "${la.word}"!`, "success");
+                else if (la.type === "incorrect") showToastUI(`${la.player} errou com "${la.attempt}". Vez de ${data.actual_current_turn_player_name}.`, "info");
+                else if (la.type === "game_start") showToastUI(`Jogo iniciado! Vez de ${la.starting_player}.`, "success");
+            }
+        });
+        
+        socket.on("game_over", (data) => {
+            if(!data) return;
+            showToastUI(data.reason || `${data.winner} venceu!`, data.winner === localPlayerName ? "success" : "info");
+            let msg = `${data.winner} venceu! ${data.reason}`;
+            if (data.sequence) msg += ` Sequência: ${data.sequence.join(' → ')}`;
+            if(gameFinishedMessageEl) gameFinishedMessageEl.textContent = msg;
+            gameFinishedDisplayEl?.classList.remove("hidden");
+            if(guessInputEl) guessInputEl.disabled = true; 
+            if(sendGuessBtn) sendGuessBtn.disabled = true;
+            if(currentHintDisplayEl) currentHintDisplayEl.textContent = "FIM DE JOGO";
+        });
+        
+        socket.on("player_left_room", (data) => { 
+            if(data && data.name) showToastUI(`${data.name} saiu da sala.`, "info");
+            // players_update já deve ter atualizado a lista
+        });
+
+        socket.on("play_again_initiated", (data) => { 
+            if(data && data.message) showToastUI(data.message, "info");
+            gameFinishedDisplayEl?.classList.add('hidden');
+            // Espera o evento "all_players_joined_choose_words" para ir para a tela de palavras
+        });
+        socket.on("new_chat_message_broadcast", (data) => { 
+          if(data && data.name && data.text && data.time) {
+            addMessageToChat(data.name, data.text, data.time);
+          }
+        });
+
+        // Initial setup
+        showScreenUI('initial');
+    }); // Fim do DOMContentLoaded
+</script>
 </body>
 </html>
