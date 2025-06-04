@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jogo das 5 Palavras - Revisto</title>
+  <title>Jogo das 5 Palavras - Final</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0;}
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #6a82fb, #fc5c7d); /* Gradiente mais vibrante */
+      background: linear-gradient(135deg, #6a82fb, #fc5c7d);
       color: #333; min-height: 100vh;
       display: flex; flex-direction: column; align-items: center;
-      padding: 10px; font-size: 16px; /* Base font size for responsiveness */
+      padding: 10px; font-size: 16px; 
     }
     .container { max-width: 1200px; width: 100%; }
     .section {
-      background: rgba(255, 255, 255, 0.95); /* Leve transparência */
-      backdrop-filter: blur(5px); /* Efeito de vidro fosco se o fundo permitir */
-      border-radius: 12px; /* Bordas mais arredondadas */
+      background: rgba(255, 255, 255, 0.97); 
+      backdrop-filter: blur(3px); 
+      border-radius: 12px; 
       padding: 20px; margin-bottom: 20px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.1);
     }
@@ -29,23 +29,17 @@
     h2 { margin-bottom: 20px; font-size: 1.6em; }
     h3 { margin-bottom: 15px; font-size: 1.25em; color: #5a67d8; }
 
-    /* Layout e Componentes */
-    .game-layout {
-      display: grid; grid-template-columns: 1fr; /* Default para mobile */
-      gap: 20px; align-items: start;
-    }
-    @media (min-width: 769px) { /* Desktop layout */
-        .game-layout { grid-template-columns: 1fr 320px; }
-    }
+    .game-layout { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
+    @media (min-width: 800px) { .game-layout { grid-template-columns: 1fr 340px; } }
 
     .game-main { min-height: 350px; }
     .game-sidebar { display: flex; flex-direction: column; gap: 15px; }
-    .sidebar-section { padding: 15px; }
-    .sidebar-section h3 { margin: 0 0 10px 0; font-size: 1.1em; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+    .sidebar-section { padding: 15px; background-color: rgba(255,255,255,0.9); border-radius: 8px; }
+    .sidebar-section h3 { margin: 0 0 10px 0; font-size: 1.15em; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
 
     .player-item {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 12px; margin: 6px 0; background: #f7fafc;
+      padding: 10px 12px; margin: 6px 0; background: #f8fafc;
       border-radius: 8px; font-size: 0.95em; border-left: 4px solid transparent;
       transition: background-color 0.2s;
     }
@@ -56,49 +50,49 @@
 
     .chat-messages {
       height: 180px; overflow-y: auto; border: 1px solid #e2e8f0;
-      border-radius: 8px; padding: 12px; background: #fdfdff; /* Um pouco mais claro */
+      border-radius: 8px; padding: 12px; background: #fff;
       font-size: 0.9em; margin-bottom: 12px;
     }
     .chat-message { margin-bottom: 10px; line-height: 1.5; }
     .chat-timestamp { color: #a0aec0; font-size: 0.8em; margin-right: 6px; }
-    .chat-player { font-weight: 600; color: #7f5af0; } /* Cor de destaque no chat */
+    .chat-player { font-weight: 600; color: #7f5af0; }
 
-    .chat-input-container { display: flex; gap: 8px; align-items: stretch; /* Alinha altura */ }
-    .chat-input {
-      flex-grow: 1; /* Ocupa espaço disponível */
-      padding: 10px 14px; border: 1px solid #cbd5e0;
-      border-radius: 8px; font-size: 1em; direction: ltr; 
-      min-width: 0; /* Permite encolher */
+    .input-button-group { display: flex; gap: 8px; align-items: stretch; }
+    .input-field {
+      flex-grow: 1; padding: 10px 14px; border: 1px solid #cbd5e0;
+      border-radius: 8px; font-size: 1em; min-width: 0; direction: ltr; 
     }
-    .chat-send {
-      padding: 10px 15px; background: #7f5af0; color: white;
-      border: none; border-radius: 8px; cursor: pointer;
-      font-size: 1em; font-weight: 500; transition: background 0.2s; white-space: nowrap;
-      flex-shrink: 0; /* Não encolhe */
+    .action-button {
+      flex-shrink: 0; padding: 10px 15px; background: #7f5af0; color: white;
+      border: none; border-radius: 8px; cursor: pointer; font-size: 1em; 
+      font-weight: 500; white-space: nowrap; transition: background-color 0.2s;
     }
-    .chat-send:hover { background: #6c47d8; }
+    .action-button:hover { background: #6c47d8; }
+    .action-button.success { background: #48bb78; }
+    .action-button.success:hover { background: #38a169; }
+
 
     label { display: block; width: 100%; margin-bottom: 6px; font-weight: 600; font-size: 0.95em; color: #4a5568; }
-    input[type="text"] {
+    input[type="text"].form-input { /* Classe específica para inputs de formulário */
       width: 100%; padding: 12px 15px; border: 1px solid #cbd5e0;
       border-radius: 8px; margin-bottom: 18px; font-size: 1em; color: #2d3748;
     }
-    input[type="text"]:focus { border-color: #7f5af0; box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.2); outline: none;}
+    input[type="text"].form-input:focus { border-color: #7f5af0; box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.2); outline: none;}
 
-    button {
-      background: #7f5af0; color: white; font-weight: 600; /* Aumenta peso da fonte */
+    button.general-button { /* Para botões que não são parte de input-button-group */
+      background: #7f5af0; color: white; font-weight: 600; 
       border: none; padding: 12px 20px; border-radius: 8px;
       cursor: pointer; transition: background 0.2s, transform 0.1s;
       width: 100%; margin-bottom: 12px; font-size: 1em; text-transform: uppercase; letter-spacing: 0.5px;
     }
-    button:hover { background: #6c47d8; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-    button:active { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    button.secondary { background: #a0aec0; }
-    button.secondary:hover { background: #718096; }
-    button.success { background: #48bb78; }
-    button.success:hover { background: #38a169; }
-    button.warning { background: #ecc94b; color: #2d3748; }
-    button.warning:hover { background: #d69e2e; }
+    button.general-button:hover { background: #6c47d8; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    button.general-button:active { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    button.general-button.secondary { background: #a0aec0; }
+    button.general-button.secondary:hover { background: #718096; }
+    button.general-button.success { background: #48bb78; }
+    button.general-button.success:hover { background: #38a169; }
+    button.general-button.warning { background: #ecc94b; color: #2d3748; }
+    button.general-button.warning:hover { background: #d69e2e; }
 
     .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 20px; }
      @media (min-width: 480px) { .options-grid { grid-template-columns: 1fr 1fr; } }
@@ -112,107 +106,92 @@
       background: white; padding: 12px 22px; border-radius: 8px; display: inline-block;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin: 8px 0 15px 0;
     }
-    .copy-code-btn { background: #38b2ac; margin: 0 auto; max-width: 200px; font-size: 0.9em; padding: 10px;}
-    .copy-code-btn:hover { background: #2c7a7b; }
+    button.copy-code-btn { background: #38b2ac; margin: 0 auto; max-width: 200px; font-size: 0.9em; padding: 10px;}
+    button.copy-code-btn:hover { background: #2c7a7b; }
 
-    /* Game Area */
     .game-info { text-align: center; margin-bottom: 20px; }
     .turn-info { font-size: 1.4em; font-weight: 600; color: #6c47d8; margin-bottom: 18px; }
+    .turn-info .active-player-name { font-weight: 700; color: #5a67d8; }
     
-    .word-progress-container { /* Novo container para a sequência de palavras */
-        display: flex;
-        flex-wrap: wrap; /* Quebra para nova linha se necessário em telas pequenas */
-        justify-content: center;
-        gap: 8px;
-        margin-bottom: 20px;
-        padding: 10px;
-        background-color: rgba(255,255,255,0.7);
-        border-radius: 8px;
+    .keyword-initials-display {
+        background-color: rgba(240, 244, 255, 0.8); 
+        padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: left; 
+        border: 1px solid #d6ddeb;
+    }
+    .keyword-initials-display p { margin: 8px 0; font-size: 1.1em; color: #2d3748; line-height: 1.5;}
+    .keyword-initials-display .keyword-label { font-weight: 600; color: #5a67d8; }
+    .keyword-initials-display .initial-letter {
+      display: inline-block; background-color: #e2e8f0; color: #4a5568;
+      padding: 6px 10px; border-radius: 6px; font-weight: 600; margin: 0 4px;
+      min-width: 32px; text-align: center; font-size: 1em;
+    }
+    .keyword-initials-display .main-keyword {
+      font-weight: 700; font-size: 1.15em; color: #7f5af0; background-color: white;
+      padding: 5px 10px; border-radius: 6px;
+    }
+
+    .word-progress-container {
+        display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; 
+        margin-bottom: 25px; padding: 10px 0;
     }
     .word-slot {
-        background-color: #e2e8f0;
-        color: #4a5568;
-        padding: 10px 15px;
-        border-radius: 6px;
-        font-size: 1.1em;
-        font-weight: 500;
-        min-width: 50px; /* Para iniciais não ficarem muito pequenas */
-        text-align: center;
-        border: 2px solid transparent;
+      background-color: #edf2f7; color: #718096; padding: 12px 18px; 
+      border-radius: 8px; font-size: 1.2em; font-weight: 600;
+      min-width: 55px; text-align: center; border: 2px solid #e2e8f0;
+      transition: all 0.3s ease;
     }
-    .word-slot.completed {
-        background-color: #c6f6d5; /* Verde para completas */
-        color: #2f855a;
-        border-color: #68d391;
-    }
-    .word-slot.first-word { /* Destaque para a primeira palavra dada */
-        background-color: #bee3f8;
-        color: #2c5282;
-        border-color: #63b3ed;
-        font-weight: 600;
-    }
-     .word-slot.active-to-guess { /* Opcional: se quiser destacar o slot da dica atual */
-        border-color: #7f5af0;
-        box-shadow: 0 0 0 2px rgba(127, 90, 240, 0.3);
-    }
+    .word-slot.revealed-keyword { background-color: #ebf4ff; color: #4299e1; border-color: #90cdf4; font-weight: 700; }
+    .word-slot.completed { background-color: #f0fff4; color: #38a169; border-color: #68d391; font-weight: 700; }
+    .word-slot.is-active-hint { border-color: #7f5af0; box-shadow: 0 0 0 2px rgba(127, 90, 240, 0.4); }
 
-
-    .hint-display { /* Para a dica atual "M _ _" */
-      font-size: 2em; font-family: monospace; background: white;
-      padding: 18px; border-radius: 10px; border: 2px solid #e2e8f0;
-      letter-spacing: 4px; margin: 15px 0 25px 0; color: #2d3748;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    .hint-display {
+      font-size: 2em; font-family: monospace; background: white; padding: 18px; 
+      border-radius: 10px; border: 2px solid #e2e8f0; letter-spacing: 4px; 
+      margin: 15px auto 25px auto; color: #2d3748; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      max-width: fit-content; /* Para centralizar o conteúdo do hint */
     }
-    .guess-container { display: flex; gap: 10px; margin-top: 15px; align-items: stretch; }
-    .guess-input {
-        flex-grow: 1; /* Ocupa espaço */
-        margin-bottom: 0;
-        min-width: 0; /* Permite encolher */
-    }
-    .guess-button {
-        margin-bottom: 0;
-        min-width: 120px; /* Tamanho mínimo para desktop */
-        flex-shrink: 0; /* Não encolhe */
-    }
-
-    .word-inputs-container input[type="text"] { margin-bottom: 12px; }
+    
+    .word-inputs-container input[type="text"].form-input { margin-bottom: 12px; } /* Ajuste da classe */
 
     .waiting-screen { text-align: center; padding: 35px 20px; }
     .waiting-animation { font-size: 2.8em; margin: 18px 0; animation: pulse 1.8s infinite ease-in-out; }
     @keyframes pulse { 0%, 100% { opacity: 0.7; transform: scale(0.98);} 50% { opacity: 1; transform: scale(1.02);}}
 
+    #game-finished-display { margin-top: 20px; text-align: center; }
     #game-finished-message { font-weight: 600; margin-bottom: 18px; font-size: 1.1em; line-height: 1.6; }
-    #new-game-button-container { margin-top: 25px;}
+    #new-game-button-container { margin-top: 25px; display: flex; flex-direction: column; gap: 10px; align-items: center;}
+    #new-game-button-container button { width: auto; min-width: 200px; }
 
-    .toast-notification { /* Estilo de Toast igual ao anterior */ }
 
-    /* Responsividade Específica para Layout de Inputs */
-    @media (max-width: 768px) { /* Já tem algumas regras, adicionando/ajustando */
-      body { padding: 8px; }
-      h1 { font-size: 2em; }
-      .game-sidebar { order: 1; /* Chat e Jogadores abaixo do jogo principal no mobile */ }
-      .chat-messages { height: 160px; }
-      
-      /* Ajustes para Chat e Palpite no Mobile */
-      .chat-input { padding: 12px 14px; font-size: 1em; }
-      .chat-send { padding: 12px 10px; font-size: 0.9em; }
-      
-      .guess-input { padding: 12px 14px; font-size: 1em; }
-      .guess-button { min-width: auto; padding: 12px 10px; font-size: 0.9em; }
+    .toast-notification {
+      position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px;
+      color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000; opacity: 0; transform: translateX(100%);
+      transition: opacity 0.3s ease, transform 0.3s ease; min-width: 250px; text-align: center;
+    }
+    .toast-notification.show { opacity: 1; transform: translateX(0); }
+    .toast-notification.success { background: #48bb78; }
+    .toast-notification.error { background: #f56565; }
+    .toast-notification.info { background: #4299e1; }
+
+
+    @media (max-width: 800px) { /* Ajuste breakpoint para sidebar */
+      .game-sidebar { order: 1; /* Sidebar abaixo do jogo principal */ }
     }
     @media (max-width: 480px) {
-      .section { padding: 18px 15px; } /* Aumenta padding lateral */
-      h1 { font-size: 1.7em; }
+      .section { padding: 18px 12px; } 
+      h1 { font-size: 1.8em; }
       .room-code-value { font-size: 1.5em; letter-spacing: 2px; }
       .hint-display {font-size: 1.6em; padding: 15px; }
-      .word-slot { font-size: 1em; padding: 8px 10px; }
+      .word-slot { font-size: 1em; padding: 10px 12px; min-width: 40px;}
+      .keyword-initials-display p { font-size: 1em; }
+      .keyword-initials-display .initial-letter { padding: 5px 8px; min-width: 28px; font-size: 0.9em; }
+      .keyword-initials-display .main-keyword { font-size: 1.05em; }
 
-      .chat-input-container, .guess-container {
-          flex-direction: column; /* Empilha input e botão */
-          gap: 8px;
-      }
-      .chat-input, .guess-input { width: 100%; margin-bottom: 0; }
-      .chat-send, .guess-button { width: 100%; }
+      .input-button-group { flex-direction: column; gap: 10px; }
+      .input-field, .action-button { width: 100%; }
+      .action-button { padding: 12px; font-size: 1em;}
+      button.general-button, button.copy-code-btn { font-size: 0.95em; padding: 12px 15px;}
     }
   </style>
 </head>
@@ -223,23 +202,23 @@
     <div class="section" id="initial-section">
       <h2>Como deseja jogar?</h2>
       <div class="options-grid">
-        <button class="success" onclick="showScreen('create-room-section')">🏠 Criar Nova Sala</button>
-        <button class="warning" onclick="showScreen('join-room-section')">🔑 Entrar em Sala</button>
+        <button class="general-button success" onclick="showScreen('create-room-section')">🏠 Criar Nova Sala</button>
+        <button class="general-button warning" onclick="showScreen('join-room-section')">🔑 Entrar em Sala</button>
       </div>
     </div>
 
     <div class="section hidden" id="create-room-section">
-      <button class="secondary" onclick="handleGoBackToInitial()">← Voltar</button>
+      <button class="general-button secondary" onclick="handleGoBackToInitial()">← Voltar</button>
       <h2>Criar Nova Sala</h2>
       <label for="create-player-name">Seu Nome:</label>
-      <input type="text" id="create-player-name" placeholder="Seu nome aqui..." maxlength="20" />
-      <button onclick="createRoom()">Criar Sala</button>
+      <input type="text" id="create-player-name" class="form-input" placeholder="Seu nome aqui..." maxlength="20" />
+      <button class="general-button" onclick="createRoom()">Criar Sala</button>
       <div id="room-created-info" class="hidden">
         <div class="room-code-display">
           <h3>🎉 Sala Criada!</h3>
           <p>Compartilhe este código com seu amigo:</p>
-          <div class="room-code-value" id="generated-room-code">CODE</div>
-          <button class="copy-code-btn" onclick="copyRoomCode()">📋 Copiar Código</button>
+          <div class="room-code-value" id="generated-room-code">CÓDIGO</div>
+          <button class="general-button copy-code-btn" onclick="copyRoomCode()">📋 Copiar Código</button>
         </div>
         <div class="waiting-screen">
           <div class="waiting-animation">⏳</div>
@@ -249,21 +228,21 @@
     </div>
 
     <div class="section hidden" id="join-room-section">
-      <button class="secondary" onclick="handleGoBackToInitial()">← Voltar</button>
+      <button class="general-button secondary" onclick="handleGoBackToInitial()">← Voltar</button>
       <h2>Entrar em Sala</h2>
       <label for="join-player-name">Seu Nome:</label>
-      <input type="text" id="join-player-name" placeholder="Seu nome aqui..." maxlength="20" />
+      <input type="text" id="join-player-name" class="form-input" placeholder="Seu nome aqui..." maxlength="20" />
       <label for="join-room-code">Código da Sala:</label>
-      <input type="text" id="join-room-code" placeholder="Código de 6 dígitos" maxlength="6" style="text-transform: uppercase;" />
-      <button onclick="joinExistingRoom()">Entrar na Sala</button>
+      <input type="text" id="join-room-code" class="form-input" placeholder="Código de 6 dígitos" maxlength="6" style="text-transform: uppercase;" />
+      <button class="general-button" onclick="joinExistingRoom()">Entrar na Sala</button>
     </div>
 
     <div class="section hidden" id="word-selection-section">
-      <button class="secondary" onclick="handleLeaveGameDuringSetup()">Sair / Voltar ao Menu</button>
-      <h2>Escolha suas 5 palavras</h2>
-      <p>As palavras devem ter conexão semântica em sequência. Máx. 25 caracteres, mín. 2.</p>
+      <button class="general-button secondary" onclick="handleLeaveGameDuringSetup()" style="width:auto; float:left; font-size:0.8em; padding: 8px 12px;">Sair</button>
+      <h2 style="clear:both;">Escolha suas 5 palavras</h2>
+      <p>As palavras devem ter conexão semântica em sequência. (Mín 2, Máx 25 caracteres)</p>
       <div id="word-inputs-container" class="word-inputs-container"></div>
-      <button id="submit-words-button" onclick="submitWords()">Enviar Palavras</button>
+      <button id="submit-words-button" class="general-button" onclick="submitWords()">Enviar Palavras</button>
       <div id="waiting-for-opponent-words" class="waiting-screen hidden">
         <div class="waiting-animation">💬</div>
         <p><strong>Palavras enviadas! Aguardando oponente...</strong></p>
@@ -273,22 +252,22 @@
     <div class="game-layout hidden" id="game-screen-layout">
       <div class="game-main">
         <div class="section" id="game-active-section">
-           <button class="secondary" id="leave-active-game-button" onclick="handleLeaveActiveGame()" style="width: auto; float: right; margin-bottom: 10px; font-size: 0.8em; padding: 8px 12px;">Sair</button>
-          <div class="game-info">
-            <div class="turn-info" id="turn-info-display">Vez de: NomeJogador</div>
-            <div id="word-progress-container" class="word-progress-container">
-                </div>
-            <div class="hint-display" id="current-hint-display">X _ _ _ _</div>
+           <button class="general-button secondary" id="leave-active-game-button" onclick="handleLeaveActiveGame()" style="width: auto; float: right; margin-bottom: 10px; font-size: 0.8em; padding: 8px 12px;">Sair</button>
+          <div class="game-info" style="clear:both;">
+            <div class="turn-info" id="turn-info-display">Carregando turno...</div>
+            <div id="keyword-initials-display" class="keyword-initials-display"></div>
+            <div id="word-progress-container" class="word-progress-container"></div>
+            <div class="hint-display" id="current-hint-display">_ _ _ _ _</div>
           </div>
-          <div class="guess-container">
-            <input type="text" id="guess-input" class="guess-input" placeholder="Seu palpite..." />
-            <button onclick="sendGuess()" class="guess-button success">Enviar Palpite</button>
+          <div class="input-button-group" id="guess-input-group">
+            <input type="text" id="guess-input" class="input-field" placeholder="Seu palpite..." disabled />
+            <button onclick="sendGuess()" class="action-button success" id="guess-button" disabled>Enviar Palpite</button>
           </div>
-          <div id="game-finished-display" class="hidden" style="margin-top: 20px; text-align: center;">
+          <div id="game-finished-display" class="hidden">
             <h3 id="game-finished-message">Jogo Finalizado!</h3>
             <div id="new-game-button-container">
-              <button class="warning" onclick="requestNewGame()">✨ Jogar Novamente</button>
-              <button class="secondary" onclick="handleGoBackToInitial()">Voltar ao Menu</button>
+              <button class="general-button warning" onclick="requestNewGame()">✨ Jogar Novamente</button>
+              <button class="general-button secondary" onclick="handleGoBackToInitial()">Voltar ao Menu</button>
             </div>
           </div>
         </div>
@@ -301,140 +280,273 @@
         <div class="sidebar-section">
           <h3>💬 Chat</h3>
           <div class="chat-messages" id="chat-messages-box"></div>
-          <div class="chat-input-container">
-            <input type="text" id="chat-message-input" class="chat-input" placeholder="Mensagem..." maxlength="100" />
-            <button onclick="sendChatMessage()" class="chat-send">Enviar</button>
+          <div class="input-button-group" id="chat-input-group">
+            <input type="text" id="chat-message-input" class="input-field" placeholder="Mensagem..." maxlength="100" />
+            <button onclick="sendChatMessage()" class="action-button" id="chat-send-button">Enviar</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <script>
+<script>
     const socket = io(); 
     let currentPlayerName = '';
     let currentRoomId = '';
-    let myWordsToGuessStore = []; // Armazena as palavras que EU preciso adivinhar
-    let myCompletedMaskStore = []; // Armazena minha máscara de palavras completas
-    const NUM_WORDS_EXPECTED = 5; 
+    const NUM_WORDS_TOTAL = 5; 
 
-    const screens = [
+    const allScreenIds = [
       "initial-section", "create-room-section", "join-room-section",
       "word-selection-section", "game-screen-layout"
     ];
     function showScreen(screenIdToShow) {
-      screens.forEach(id => document.getElementById(id).classList.add("hidden"));
+      allScreenIds.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.classList.add("hidden");
+      });
       const screenEl = document.getElementById(screenIdToShow);
       if(screenEl) screenEl.classList.remove("hidden");
       
       if (screenIdToShow === 'create-room-section') { 
-        document.getElementById('room-created-info').classList.add('hidden');
-        document.getElementById('create-player-name').value = '';
+        const roomInfoEl = document.getElementById('room-created-info');
+        if(roomInfoEl) roomInfoEl.classList.add('hidden');
+        const createNameEl = document.getElementById('create-player-name');
+        if(createNameEl) createNameEl.value = '';
       } else if (screenIdToShow === 'join-room-section') {
-        document.getElementById('join-player-name').value = '';
-        document.getElementById('join-room-code').value = '';
+        const joinNameEl = document.getElementById('join-player-name');
+        const joinCodeEl = document.getElementById('join-room-code');
+        if(joinNameEl) joinNameEl.value = '';
+        if(joinCodeEl) joinCodeEl.value = '';
       }
-      document.getElementById('game-finished-display').classList.add('hidden'); // Esconde msg de fim de jogo ao mudar de tela
+      const finishedDispEl = document.getElementById('game-finished-display');
+      if(finishedDispEl) finishedDispEl.classList.add('hidden'); 
     }
 
-    function showToast(message, type = 'info') { /* ... (função toast igual à anterior) ... */ }
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast-notification ${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.classList.add('show'); }, 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+        }, 3000 + (message.length * 30)); // Dura um pouco mais para mensagens longas
+    }
 
-    function copyRoomCode() { /* ... (função igual à anterior) ... */ }
-    
-    function handleGoBackToInitial() {
-        // Se estiver em uma sala, pode precisar notificar o servidor
-        if (currentRoomId) {
-            // Poderia adicionar uma confirmação se o jogo estiver ativo
-            // console.log("Voltando ao menu, currentRoomId:", currentRoomId);
-            // socket.emit("player_initiated_leave"); // Se quiser notificar saída da sala
-        }
-        showScreen('initial-section');
-        currentRoomId = ''; // Limpa o ID da sala ao voltar pro menu
-        // Outros resets de estado de jogo local podem ser necessários
+    function copyRoomCode() {
+      const roomCodeEl = document.getElementById("generated-room-code");
+      if(!roomCodeEl) return;
+      const roomCode = roomCodeEl.textContent;
+      navigator.clipboard.writeText(roomCode)
+        .then(() => showToast("Código copiado! 📋", "success"))
+        .catch(() => showToast("Erro ao copiar. Código: " + roomCode, "error"));
     }
     
-    function handleLeaveGameDuringSetup(){
-        if(currentRoomId){ // Se já criou/entrou numa sala mas ainda não começou o jogo
-            socket.emit("player_initiated_leave");
-        }
-        showScreen('initial-section');
+    function resetLocalGameState(){
         currentRoomId = '';
+        currentPlayerName = ''; // Poderia manter se quisesse preencher automaticamente
+        const playersListEl = document.getElementById("players-list");
+        const chatBoxEl = document.getElementById("chat-messages-box");
+        const wordProgressEl = document.getElementById("word-progress-container");
+        const keywordInitialsEl = document.getElementById("keyword-initials-display");
+        const currentHintEl = document.getElementById("current-hint-display");
+
+        if(playersListEl) playersListEl.innerHTML = "";
+        if(chatBoxEl) chatBoxEl.innerHTML = "";
+        if(wordProgressEl) wordProgressEl.innerHTML = "";
+        if(keywordInitialsEl) keywordInitialsEl.innerHTML = "";
+        if(currentHintEl) currentHintEl.textContent = "_ _ _ _ _";
+
+        document.getElementById('game-finished-display')?.classList.add('hidden');
     }
-    function handleLeaveActiveGame(){
-        if (currentRoomId && confirm("Tem certeza que deseja sair da partida?")) {
+
+    function handleGoBackToInitial() {
+        if (currentRoomId) { // Se estava em uma sala, emite evento de saída
             socket.emit("player_initiated_leave");
+        }
+        resetLocalGameState();
+        showScreen('initial-section');
+    }
+    
+    function handleLeaveGameDuringSetup(){ // Usado na tela de escolha de palavras
+        if(currentRoomId){ 
+            socket.emit("player_initiated_leave");
+        }
+        resetLocalGameState();
+        showScreen('initial-section');
+    }
+    function handleLeaveActiveGame(){ // Usado durante o jogo ativo
+        if (currentRoomId && confirm("Tem certeza que deseja sair da partida? Isso encerrará o jogo para o oponente.")) {
+            socket.emit("player_initiated_leave");
+            resetLocalGameState();
             showScreen('initial-section');
-            currentRoomId = '';
         }
     }
 
+    function createRoom() {
+      currentPlayerName = document.getElementById("create-player-name").value.trim();
+      if (!currentPlayerName || currentPlayerName.length < 2 || currentPlayerName.length > 20) {
+        showToast("Nome inválido (2-20 caracteres).", "error"); return;
+      }
+      socket.emit("join_game", { player_name: currentPlayerName });
+    }
 
-    function createRoom() { /* ... (função igual à anterior, usando showToast) ... */ }
-    function joinExistingRoom() { /* ... (função igual à anterior, usando showToast) ... */ }
-    function createWordInputFields() { /* ... (função igual à anterior) ... */ }
-    function submitWords() { /* ... (função igual à anterior, usando showToast) ... */ }
-    function sendGuess() { /* ... (função igual à anterior, usando showToast) ... */ }
-    function sendChatMessage() { /* ... (função igual à anterior) ... */ }
-    function addMessageToChat(playerName, message, timestamp) { /* ... (função igual à anterior) ... */ }
+    function joinExistingRoom() {
+      currentPlayerName = document.getElementById("join-player-name").value.trim();
+      currentRoomId = document.getElementById("join-room-code").value.trim().toUpperCase();
+      if (!currentPlayerName || currentPlayerName.length < 2 || currentPlayerName.length > 20) {
+        showToast("Nome inválido (2-20 caracteres).", "error"); return;
+      }
+      if (!currentRoomId || currentRoomId.length !== 6) { 
+        showToast("Código da sala inválido (6 caracteres).", "error"); return;
+      }
+      socket.emit("join_game", { player_name: currentPlayerName, room_id: currentRoomId });
+    }
+
+    function createWordInputFields() {
+      const container = document.getElementById("word-inputs-container");
+      container.innerHTML = '';
+      for (let i = 0; i < NUM_WORDS_TOTAL; i++) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.classList.add("form-input"); // Usa a classe para inputs de formulário
+        input.placeholder = `Palavra ${i + 1}`;
+        input.id = `word-input-${i}`;
+        input.maxLength = 25; 
+        container.appendChild(input);
+      }
+    }
+
+    function submitWords() {
+      const words = [];
+      const submitBtn = document.getElementById("submit-words-button");
+      for (let i = 0; i < NUM_WORDS_TOTAL; i++) {
+        const wordEl = document.getElementById(`word-input-${i}`);
+        if(!wordEl) { showToast(`Erro: Input para palavra ${i+1} não encontrado.`, "error"); return; }
+        const word = wordEl.value.trim();
+        if (!word || word.length < 2 || word.length > 25) {
+          showToast(`Palavra ${i+1} inválida (2-25 caracteres).`, "error"); return;
+        }
+        words.push(word);
+      }
+      socket.emit("submit_words", { words });
+      document.getElementById("waiting-for-opponent-words")?.classList.remove("hidden");
+      if(submitBtn) submitBtn.disabled = true; 
+    }
+
+    function sendGuess() {
+      const guessInputEl = document.getElementById("guess-input");
+      if(!guessInputEl) return;
+      const guess = guessInputEl.value.trim();
+      if (!guess) { showToast("Digite um palpite!", "info"); return; }
+      socket.emit("make_guess", { guess });
+      guessInputEl.value = "";
+    }
+    
+    function sendChatMessage() {
+      const msgInputEl = document.getElementById("chat-message-input");
+      if(!msgInputEl) return;
+      const message = msgInputEl.value.trim();
+      if (message && message.length <= 150) {
+        socket.emit("chat_message", { message });
+        msgInputEl.value = "";
+      } else if (message.length > 150) {
+        showToast("Mensagem muito longa (máx 150 caracteres).", "error");
+      }
+    }
+    function addMessageToChat(playerName, message, timestamp) {
+        const chatBox = document.getElementById("chat-messages-box");
+        if(!chatBox) return;
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("chat-message");
+        
+        const timeSpan = document.createElement("span");
+        timeSpan.className = "chat-timestamp";
+        timeSpan.textContent = `[${timestamp}]`;
+        
+        const playerSpan = document.createElement("span");
+        playerSpan.className = "chat-player";
+        playerSpan.textContent = `${playerName}: `;
+        
+        msgDiv.appendChild(timeSpan);
+        msgDiv.appendChild(playerSpan);
+        msgDiv.appendChild(document.createTextNode(message)); // Usar textContent para segurança
+        
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+    
     function requestNewGame() { 
         socket.emit("request_new_game", {});
-        document.getElementById('game-finished-display').classList.add('hidden'); 
+        document.getElementById('game-finished-display')?.classList.add('hidden'); 
     }
 
-
-    function updateTurnDisplay(isMyTurn, turnPlayerName) {
-        const turnInfoEl = document.getElementById("turn-info-display");
-        const guessInputEl = document.getElementById("guess-input");
-        const guessButtonEl = document.querySelector(".guess-button");
-
-        if (!turnInfoEl || !guessInputEl || !guessButtonEl) return; // Elementos não existem ainda
-
-        if (isMyTurn) {
-            turnInfoEl.textContent = "🎯 É a sua vez!";
-            turnInfoEl.style.color = "#48bb78";
-            guessInputEl.disabled = false;
-            guessButtonEl.disabled = false;
-            setTimeout(() => guessInputEl.focus(), 100); // Foco com pequeno delay
-        } else {
-            turnInfoEl.textContent = `Aguardando ${turnPlayerName || 'oponente'}...`;
-            turnInfoEl.style.color = "#a0aec0"; // Cor mais neutra para aguardo
-            guessInputEl.disabled = true;
-            guessButtonEl.disabled = true;
+    function renderKeywordAndInitialsSharedView(viewingForPlayer, keyword, initialsArray) {
+        const display = document.getElementById("keyword-initials-display");
+        if (!display) return;
+        let html = `<p><span class="keyword-label">Palavra Chave de <span class="active-player-name">${viewingForPlayer}</span>:</span> <span class="main-keyword">${keyword.toUpperCase()}</span></p>`;
+        if (initialsArray && initialsArray.length > 0) {
+            html += `<p><span class="keyword-label">Próximas Iniciais:</span> `;
+            initialsArray.forEach(initial => {
+                html += `<span class="initial-letter">${initial.toUpperCase()}</span>`;
+            });
+            html += `</p>`;
         }
+        display.innerHTML = html;
     }
-    
-    function renderWordProgressDisplay(originalWords, completedMask, activeWordIdx) {
-        const container = document.getElementById("word-progress-container");
-        if (!container) return;
-        container.innerHTML = ""; // Limpa o container
 
-        originalWords.forEach((word, index) => {
+    function renderWordProgressSlotsSharedView(allOriginalTargetWords, completedMask, activeWordIdxBeingGuessed) {
+        const container = document.getElementById("word-progress-container");
+        if (!container || !allOriginalTargetWords) return;
+        container.innerHTML = ""; 
+
+        allOriginalTargetWords.forEach((word, index) => {
             const slot = document.createElement("div");
             slot.classList.add("word-slot");
 
-            if (index === 0) { // Primeira palavra sempre completa e destacada
+            if (index === 0) { 
                 slot.textContent = word.toUpperCase();
-                slot.classList.add("first-word");
-                if(completedMask[index]) slot.classList.add("completed"); // Pode já estar completa
-            } else if (completedMask[index]) {
+                slot.classList.add("revealed-keyword"); 
+            } else if (completedMask[index]) { 
                 slot.textContent = word.toUpperCase();
                 slot.classList.add("completed");
-            } else {
-                slot.textContent = word[0].toUpperCase(); // Mostra só a inicial
+            } else { 
+                slot.textContent = word[0].toUpperCase(); // Apenas a inicial
             }
             
-            // Opcional: destacar o slot da palavra que está sendo adivinhada ATIVAMENTE
-            // (aquela para a qual a #current-hint-display se refere)
-            // if (index === activeWordIdx && !completedMask[index]) {
-            //    slot.classList.add("active-to-guess");
-            // }
+            if (index === activeWordIdxBeingGuessed && index !== 0 && !completedMask[index]) {
+                slot.classList.add("is-active-hint");
+            }
             container.appendChild(slot);
         });
     }
 
-    // --- Handlers de Eventos Socket.IO ---
+    function updateTurnDisplayAndInputsSharedView(isClientTurn, turnPlayerNameStr) {
+        const turnInfoEl = document.getElementById("turn-info-display");
+        const guessInputEl = document.getElementById("guess-input");
+        const guessButtonEl = document.getElementById("guess-button");
+
+        if (!turnInfoEl || !guessInputEl || !guessButtonEl) return;
+        
+        const actualTurnPlayerName = turnPlayerNameStr || "Oponente";
+
+        if (isClientTurn) {
+            turnInfoEl.innerHTML = `🎯 É a sua vez, <span class="active-player-name">${currentPlayerName}</span>!`;
+            turnInfoEl.style.color = "#48bb78";
+            guessInputEl.disabled = false;
+            guessButtonEl.disabled = false;
+            setTimeout(() => guessInputEl.focus(), 100);
+        } else {
+            turnInfoEl.innerHTML = `Aguardando <span class="active-player-name">${actualTurnPlayerName}</span>...`;
+            turnInfoEl.style.color = "#a0aec0";
+            guessInputEl.disabled = true;
+            guessButtonEl.disabled = true;
+        }
+    }
+
     socket.on("connected", () => showToast("Conectado ao servidor!", "success"));
-    socket.on("error", (data) => showToast(data.message || "Erro desconhecido.", "error"));
+    socket.on("error", (data) => showToast(data.message || "Erro desconhecido do servidor.", "error"));
 
     socket.on("joined_room", (data) => {
       currentRoomId = data.room_id;
@@ -442,105 +554,142 @@
       showToast(`Entrou na sala: ${data.room_id}`, "success");
       if (data.is_creator) {
         document.getElementById("generated-room-code").textContent = data.room_id;
-        document.getElementById("room-created-info").classList.remove("hidden");
+        document.getElementById("room-created-info")?.classList.remove("hidden");
       }
     });
 
-    socket.on("players_update", (data) => { /* ... (lógica igual ou similar à anterior, usando currentPlayerName) ... */ });
+    socket.on("players_update", (data) => {
+      const playersListEl = document.getElementById("players-list");
+      if(!playersListEl) return;
+      playersListEl.innerHTML = "";
+      data.players_online.forEach(p => {
+        const item = document.createElement("div");
+        item.className = "player-item";
+        if (p.is_current_turn) item.classList.add("current-turn");
+        item.innerHTML = `
+          <span class="player-name">${p.name} ${p.name === currentPlayerName ? "<small>(Você)</small>" : ""}</span>
+          <span class="player-status">
+            ${p.is_current_turn ? '<span class="status-icon" title="Vez dele(a)">👉</span>' : ''}
+            ${p.words_chosen ? '<span class="status-icon" title="Palavras Prontas">✅</span>' : '<span class="status-icon" title="Escolhendo Palavras">📝</span>'}
+          </span>`;
+        playersListEl.appendChild(item);
+      });
+    });
     
     socket.on("start_choosing_words", (data) => {
+        resetLocalGameState(); // Limpa qualquer estado de jogo anterior
+        currentRoomId = currentRoomId; // Mantém o room ID se já estiver definido
+        // currentPlayerName já deve estar definido
         showScreen('word-selection-section');
         createWordInputFields();
-        document.getElementById("waiting-for-opponent-words").classList.add("hidden");
-        document.getElementById("submit-words-button").disabled = false;
+        const waitingMsgEl = document.getElementById("waiting-for-opponent-words");
+        const submitBtnEl = document.getElementById("submit-words-button");
+        if(waitingMsgEl) waitingMsgEl.classList.add("hidden");
+        if(submitBtnEl) submitBtnEl.disabled = false;
         if(data.message) showToast(data.message, "info");
     });
 
-    socket.on("words_submitted_update", (data) => { /* ... (lógica igual ou similar à anterior) ... */ });
-
-    socket.on("game_started", (data) => {
-      showScreen('game-screen-layout');
-      myWordsToGuessStore = data.your_words_to_guess_original || [];
-      myCompletedMaskStore = data.your_completed_mask || Array(NUM_WORDS_EXPECTED).fill(false);
-
-      renderWordProgressDisplay(myWordsToGuessStore, myCompletedMaskStore, data.active_word_idx);
-      document.getElementById("current-hint-display").textContent = data.current_hint_for_active_word || "ERRO_NA_DICA";
-      updateTurnDisplay(data.is_your_turn, data.current_turn_player_name);
-      showToast("O jogo começou! Boa sorte!", "success");
+    socket.on("words_submitted_update", (data) => { 
+        showToast(`${data.player_name} enviou as palavras.`, "info");
+        // Atualiza a lista de jogadores para refletir o status 'words_chosen'
+        const playersListEl = document.getElementById("players-list");
+        if(!playersListEl) return;
+        playersListEl.innerHTML = ""; 
+         data.players_online.forEach(p => {
+            const item = document.createElement("div");
+            item.className = "player-item";
+            if (p.is_current_turn) item.classList.add("current-turn");
+            item.innerHTML = `
+            <span class="player-name">${p.name} ${p.name === currentPlayerName ? "<small>(Você)</small>" : ""}</span>
+            <span class="player-status">
+                ${p.is_current_turn ? '<span class="status-icon" title="Vez dele(a)">👉</span>' : ''}
+                ${p.words_chosen ? '<span class="status-icon" title="Palavras Prontas">✅</span>' : '<span class="status-icon" title="Escolhendo Palavras">📝</span>'}
+            </span>`;
+            playersListEl.appendChild(item);
+        });
     });
 
-    socket.on("correct_guess_update", (data) => {
-        // Atualiza se o palpite foi do jogador atual
-        if (data.guessing_player_name === currentPlayerName) {
-            myCompletedMaskStore = data.guesser_completed_mask;
-            myWordsToGuessStore = data.guesser_words_original; // Caso precise recarregar
-            renderWordProgressDisplay(myWordsToGuessStore, myCompletedMaskStore, data.active_word_idx);
-            document.getElementById("current-hint-display").textContent = data.next_hint_for_active_word;
-        }
-        showToast(`${data.guessing_player_name} acertou "${data.guessed_word_original}"!`, "success");
-        updateTurnDisplay(data.current_turn_player_name === currentPlayerName, data.current_turn_player_name);
-    });
-    
-    // O jogador que errou recebe este evento para atualizar sua própria dica
-    socket.on("incorrect_guess_feedback_to_guesser", (data) => {
-        document.getElementById("current-hint-display").textContent = data.your_updated_hint;
-        // Não precisa atualizar o word-progress-display aqui, pois nenhuma palavra foi completada
-    });
+    socket.on("update_game_display", (data) => {
+        if (!data) { console.error("update_game_display: Dados ausentes."); return; }
+        showScreen('game-screen-layout'); 
+        document.getElementById('game-finished-display')?.classList.add('hidden');
 
-    // Ambos os jogadores recebem este para atualizar o turno
-    socket.on("turn_change_after_incorrect_guess", (data) => {
-        showToast(`${data.player_who_erred_name} errou com "${data.their_incorrect_guess}".`, "info");
-        updateTurnDisplay(data.current_turn_player_name === currentPlayerName, data.current_turn_player_name);
-        // Se for a vez do jogador atual AGORA, e ele recebeu nova dica por este evento:
-        if (data.current_turn_player_name === currentPlayerName && data.next_player_hint_data) {
-             if (myWordsToGuessStore && myWordsToGuessStore.length > 0) { // Garante que as palavras já foram carregadas
-                renderWordProgressDisplay(myWordsToGuessStore, myCompletedMaskStore, data.next_player_hint_data.active_word_idx);
+        renderKeywordAndInitialsSharedView(
+            data.viewing_for_player_name,
+            data.keyword_to_display,
+            data.initials_to_display
+        );
+        renderWordProgressSlotsSharedView(
+            data.all_target_words_original_for_progress,
+            data.completed_mask_for_progress,
+            data.active_word_idx_being_guessed
+        );
+        document.getElementById("current-hint-display").textContent = data.current_hint || "---";
+        updateTurnDisplayAndInputsSharedView(data.is_your_turn, data.actual_current_turn_player_name);
+
+        if (data.last_action_result) {
+            const action = data.last_action_result;
+            if (action.type === "correct_guess") {
+                showToast(`${action.by_player_name} acertou "${action.word}"!`, "success");
+            } else if (action.type === "incorrect_guess") {
+                showToast(`${action.by_player_name} errou com "${action.attempted_word}". Vez de ${data.actual_current_turn_player_name || 'Oponente'}.`, "info");
+            } else if (action.type === "game_start") {
+                 showToast("O jogo começou! Boa sorte!", "success");
             }
-            document.getElementById("current-hint-display").textContent = data.next_player_hint_data.hint;
         }
     });
     
     socket.on("game_finished", (data) => {
         showToast(data.message, data.winner_name === currentPlayerName ? "success" : "info");
-        document.getElementById("game-finished-message").textContent = data.message;
-        if (data.was_disconnection === false && data.guesser_words_original) { // Se terminou normalmente, mostra a sequência do vencedor
-            document.getElementById("game-finished-message").textContent += ` Sequência correta: ${data.guesser_words_original.join(' → ')}`;
+        let finishMsg = data.message;
+        if (data.final_words_sequence && data.final_words_sequence.length > 0 && !data.was_disconnection) {
+            finishMsg += ` Sequência adivinhada: ${data.final_words_sequence.join(' → ')}`;
         }
-        document.getElementById("game-finished-display").classList.remove("hidden");
-        document.getElementById("guess-input").disabled = true;
-        document.querySelector(".guess-button").disabled = true;
-        // Limpa o hint display e o word progress
-        document.getElementById("current-hint-display").textContent = "FIM DE JOGO";
-        document.getElementById("word-progress-container").innerHTML = "";
+        document.getElementById("game-finished-message").textContent = finishMsg;
+        document.getElementById("game-finished-display")?.classList.remove("hidden");
+        
+        const guessInputEl = document.getElementById("guess-input");
+        const guessButtonEl = document.getElementById("guess-button");
+        if(guessInputEl) guessInputEl.disabled = true;
+        if(guessButtonEl) guessButtonEl.disabled = true;
+        
+        const hintDispEl = document.getElementById("current-hint-display");
+        if(hintDispEl) hintDispEl.textContent = "FIM DE JOGO";
     });
     
-    socket.on("opponent_left_game", (data) => { // Oponente saiu via botão "Sair"
-        showToast(data.message, "warning");
-        // A lógica de game_finished já deve ter sido acionada pelo backend para o jogador restante
+    socket.on("opponent_left_game", (data) => { 
+        showToast(data.message || `${data.leaver_name} saiu.`, "warning");
+        // game_finished deve tratar o final do jogo se o oponente saiu e resultou em W.O.
     });
 
+    socket.on("game_reset_initiated", (data) => { 
+        showToast(data.message || "Novo jogo iniciado!", "info");
+        // A tela será trocada por "start_choosing_words"
+        document.getElementById('game-finished-display')?.classList.add('hidden');
+    });
+    socket.on("new_chat_message", (data) => { 
+      addMessageToChat(data.player_name, data.message, data.timestamp);
+    });
 
-    socket.on("game_reset_initiated", (data) => { /* ... (igual à anterior, preparando para start_choosing_words) ... */ });
-    socket.on("new_chat_message", (data) => { /* ... (igual à anterior) ... */ });
-
-    // Listeners de Teclado e Inputs (semelhantes aos anteriores)
-    // ...
-
-    // Iniciar na tela inicial
-    showScreen("initial-section");
-
-    // Funções showToast, copyRoomCode, createRoom, joinExistingRoom, etc.
-    // (Copiar do script anterior, fazendo ajustes para usar showToast para erros)
-    // Exemplo de ajuste em createRoom:
-    function createRoom() {
-      currentPlayerName = document.getElementById("create-player-name").value.trim();
-      if (!currentPlayerName || currentPlayerName.length < 2) {
-        showToast("Nome inválido (mín. 2 caracteres).", "error"); return;
+    document.addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        const activeElement = document.activeElement;
+        if(!activeElement) return;
+        if (activeElement.id === "chat-message-input") sendChatMessage();
+        else if (activeElement.id === "guess-input" && !activeElement.disabled) sendGuess();
+        else if (activeElement.id === "create-player-name") createRoom();
+        else if (activeElement.id === "join-player-name" || activeElement.id === "join-room-code") joinExistingRoom();
+        // Adicionar para inputs de palavra se desejar submeter com Enter (não recomendado para múltiplos inputs)
       }
-      socket.emit("join_game", { player_name: currentPlayerName });
+    });
+    const joinRoomCodeEl = document.getElementById("join-room-code");
+    if(joinRoomCodeEl) {
+        joinRoomCodeEl.addEventListener("input", function(event) {
+            event.target.value = event.target.value.toUpperCase();
+        });
     }
-    // Fazer o mesmo para joinExistingRoom, submitWords, sendGuess
 
+    showScreen("initial-section");
   </script>
 </body>
 </html>
