@@ -329,9 +329,56 @@
             socket.on('fim_de_jogo', function(data) {
                 console.log('Fim de jogo:', data);
                 document.getElementById('titulo-fim-jogo').textContent = '🎉 Fim de Jogo!';
-                document.getElementById('mensagem-fim-jogo').textContent = data.mensagem;
+                document.getElementById('mensagem-fim-jogo').innerHTML = `
+                    <div class="winner-announcement">${data.mensagem}</div>
+                    <div class="loading-gabarito">
+                        <div class="spinner"></div>
+                        <p>Carregando gabarito...</p>
+                    </div>
+                `;
                 document.getElementById('modal-fim-jogo').classList.remove('hidden');
                 mostrarToast(data.mensagem, 'success');
+                
+                // Solicitar gabarito completo
+                socket.emit('obter_gabarito', { sala: codigoSala });
+            });
+            
+            socket.on('gabarito_completo', function(data) {
+                console.log('Gabarito completo:', data);
+                exibirGabarito(data.gabarito);
+            });
+            
+            socket.on('jogo_reiniciado', function(data) {
+                console.log('Jogo reiniciado:', data);
+                mostrarToast(data.msg, 'success');
+                
+                // Resetar interface
+                estadoJogo = null;
+                document.getElementById('modal-fim-jogo').classList.add('hidden');
+                
+                // Voltar para seção de definir palavras
+                mostrarSecao('secao-palavras');
+                
+                // Resetar botão de enviar palavras
+                const btnEnviar = document.getElementById('btn-enviar-palavras');
+                btnEnviar.disabled = false;
+                btnEnviar.textContent = 'Confirmar Palavras';
+                btnEnviar.innerHTML = `
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Confirmar Palavras
+                `;
+                
+                // Limpar inputs de palavras
+                for (let i = 1; i <= numPalavras; i++) {
+                    const input = document.getElementById(`palavra-${i}`);
+                    if (input) input.value = '';
+                }
+                
+                // Limpar histórico e chat
+                document.getElementById('lista-historico').innerHTML = '<div class="no-history">Nenhuma tentativa ainda</div>';
+                document.getElementById('mensagens-chat').innerHTML = '';
             });
             
             socket.on('nova_mensagem_chat', function(data) {
@@ -639,6 +686,80 @@
 
         function voltarInicio() {
             window.location.href = '/';
+        }
+
+        function exibirGabarito(gabarito) {
+            let gabaritoHtml = '<div class="gabarito-completo">';
+            gabaritoHtml += '<h3>📝 Gabarito Completo</h3>';
+            
+            for (const [jogador, dados] of Object.entries(gabarito)) {
+                gabaritoHtml += `
+                    <div class="player-answers">
+                        <h4>Palavras de ${jogador}:</h4>
+                        <ol class="answer-list">
+                `;
+                
+                for (let i = 0; i < dados.palavras_originais.length; i++) {
+                    const palavraOriginal = dados.palavras_originais[i];
+                    const palavraNormalizada = dados.palavras_normalizadas[i];
+                    const descoberta = dados.descobertas[i];
+                    
+                    let statusIcon = descoberta ? '✅' : '❌';
+                    let correcaoInfo = '';
+                    
+                    // Mostrar se houve correção automática
+                    if (palavraOriginal.toLowerCase() !== palavraNormalizada.toLowerCase()) {
+                        correcaoInfo = ` <span class="correction-info">(corrigido de "${palavraOriginal}")</span>`;
+                    }
+                    
+                    gabaritoHtml += `
+                        <li class="answer-item ${descoberta ? 'discovered' : 'not-discovered'}">
+                            ${statusIcon} <strong>${palavraNormalizada}</strong>${correcaoInfo}
+                        </li>
+                    `;
+                }
+                
+                gabaritoHtml += '</ol></div>';
+            }
+            
+            gabaritoHtml += '</div>';
+            
+            // Atualizar modal com gabarito e botões
+            document.getElementById('mensagem-fim-jogo').innerHTML = `
+                <div class="winner-announcement">🎉 ${estadoJogo?.vencedor || 'Alguém'} venceu!</div>
+                ${gabaritoHtml}
+            `;
+            
+            // Atualizar botões do modal
+            document.querySelector('.modal-footer').innerHTML = `
+                <button class="btn btn-success" onclick="novoJogo()">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    🎮 Novo Jogo
+                </button>
+                <button class="btn btn-primary" onclick="voltarInicio()">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    🏠 Início
+                </button>
+                <button class="btn btn-secondary" onclick="fecharModalFim()">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    💬 Chat
+                </button>
+            `;
+        }
+
+        function novoJogo() {
+            if (confirm('Tem certeza que deseja iniciar um novo jogo? Todos os jogadores terão que definir novas palavras.')) {
+                socket.emit('novo_jogo', {
+                    sala: codigoSala,
+                    nome: meuNome
+                });
+            }
         }
 
         function fecharModalFim() {
