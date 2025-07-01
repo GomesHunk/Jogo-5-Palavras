@@ -1,3 +1,5 @@
+from normalizador import NormalizadorTexto
+
 class Configuracao:
     def __init__(self, num_palavras=5, max_jogadores=2):
         self.num_palavras = max(4, min(8, num_palavras))  # Entre 4 e 8
@@ -8,6 +10,7 @@ class Jogador:
         self.nome = nome
         self.num_palavras = num_palavras
         self.palavras = []  # Lista com as N palavras definidas
+        self.palavras_originais = []  # Lista com as palavras originais (antes da normalização)
         self.dicas = []     # Lista com a dica de cada palavra
         self.palavra_atual_index = 1  # Índice da palavra que está tentando adivinhar (começa na 2ª palavra)
         self.tentativas_erradas_atual = 0  # Erros na palavra atual
@@ -15,6 +18,7 @@ class Jogador:
         self.palavras_descobertas = []  # Controla quais palavras foram descobertas
         self.alvo_jogador = None  # Jogador cujas palavras este jogador deve adivinhar
         self.concluido = False  # Se terminou de adivinhar todas as palavras
+        self.normalizador = NormalizadorTexto()  # Instância do normalizador
 
     def definir_palavras(self, lista_palavras):
         if len(lista_palavras) != self.num_palavras:
@@ -29,7 +33,15 @@ class Jogador:
             if len(palavra.strip()) < 2:
                 raise ValueError("As palavras devem ter pelo menos 2 letras.")
         
-        self.palavras = [palavra.strip().lower() for palavra in lista_palavras]
+        # Salvar palavras originais e normalizadas
+        self.palavras_originais = [palavra.strip() for palavra in lista_palavras]
+        self.palavras = []
+        
+        # Normalizar cada palavra
+        for palavra_original in self.palavras_originais:
+            palavra_normalizada = self.normalizador.normalizar(palavra_original)
+            self.palavras.append(palavra_normalizada.lower())
+        
         self.palavras_descobertas = [False] * self.num_palavras
         self.tentativas_por_palavra = [0] * self.num_palavras  # Inicializar tentativas por palavra
         
@@ -95,8 +107,13 @@ class Jogador:
             return False, "Todas as palavras já foram descobertas"
         
         palavra_correta = self.alvo_jogador.palavras[self.palavra_atual_index]
+        palavra_tentada_original = palavra_tentada.strip()
         
-        if palavra_tentada.strip().lower() == palavra_correta:
+        # Normalizar a palavra tentada
+        palavra_tentada_normalizada = self.normalizador.normalizar(palavra_tentada_original).lower()
+        
+        # Comparar usando o normalizador (considera variações de acentos)
+        if self.normalizador.comparar_palavras(palavra_tentada_normalizada, palavra_correta):
             # Acertou!
             self.alvo_jogador.palavras_descobertas[self.palavra_atual_index] = True
             self.palavra_atual_index += 1
@@ -105,12 +122,17 @@ class Jogador:
             # Atualizar dicas do alvo após acertar
             self.atualizar_dicas_alvo()
             
+            # Verificar se houve correção automática
+            mensagem_correcao = ""
+            if self.normalizador.foi_corrigida(palavra_tentada_original, palavra_tentada_normalizada):
+                mensagem_correcao = f" (corrigido de '{palavra_tentada_original}')"
+            
             # Verificar se terminou todas as palavras
             if self.palavra_atual_index >= len(self.alvo_jogador.palavras):
                 self.concluido = True
-                return True, f"Parabéns! Você descobriu '{palavra_correta}' e completou todas as palavras!"
+                return True, f"Parabéns! Você descobriu '{palavra_correta}'{mensagem_correcao} e completou todas as palavras!"
             
-            return True, f"Correto! '{palavra_correta}' - Próxima palavra: {self.get_dica_palavra_atual()}"
+            return True, f"Correto! '{palavra_correta}'{mensagem_correcao} - Próxima palavra: {self.get_dica_palavra_atual()}"
         else:
             # Errou - incrementar tentativas da palavra atual no alvo
             self.tentativas_erradas_atual += 1
@@ -121,7 +143,14 @@ class Jogador:
             self.atualizar_dicas_alvo()
             
             nova_dica = self.get_dica_palavra_atual()
-            return False, f"Errou! Nova dica: {nova_dica}"
+            
+            # Verificar se há sugestão de correção
+            sugestao = self.normalizador.sugerir_correcao(palavra_tentada_original)
+            mensagem_sugestao = ""
+            if sugestao and sugestao != palavra_tentada_normalizada:
+                mensagem_sugestao = f" (você quis dizer '{sugestao}'?)"
+            
+            return False, f"Errou! Nova dica: {nova_dica}{mensagem_sugestao}"
 
     def descobrir_palavra(self, indice):
         """Marca uma palavra como descoberta"""
@@ -243,8 +272,50 @@ class PartidaMultiplayer:
                     'dica_atual': j.get_dica_palavra_atual(),
                     'palavra_anterior': j.get_palavra_anterior(),
                     'concluido': j.concluido,
-                    'alvo': j.alvo_jogador.nome if j.alvo_jogador else None
+                    'alvo': j.alvo_jogador.nome if j.alvo_jogador else None,
+                    'palavras_completas': j.palavras if self.vencedor else [],  # Só mostrar no final
+                    'palavras_originais': j.palavras_originais if self.vencedor else []
                 } for j in self.jogadores
             ],
             'mensagens_chat': self.mensagens_chat
         }
+    
+    def get_gabarito_completo(self):
+        """Retorna o gabarito completo de todos os jogadores"""
+        if not self.vencedor:
+            return None
+            
+        gabarito = {}
+        for jogador in self.jogadores:
+            gabarito[jogador.nome] = {
+                'palavras_originais': jogador.palavras_originais,
+                'palavras_normalizadas': jogador.palavras,
+                'descobertas': jogador.palavras_descobertas
+            }
+        
+        return gabarito
+    
+    def reiniciar_jogo(self):
+        """Reinicia o jogo mantendo os mesmos jogadores"""
+        # Resetar estado da partida
+        self.jogo_iniciado = False
+        self.vencedor = None
+        self.turno_atual = 0
+        self.mensagens_chat = []
+        
+        # Resetar estado dos jogadores
+        for jogador in self.jogadores:
+            jogador.palavras = []
+            jogador.palavras_originais = []
+            jogador.dicas = []
+            jogador.palavra_atual_index = 1
+            jogador.tentativas_erradas_atual = 0
+            jogador.tentativas_por_palavra = []
+            jogador.palavras_descobertas = []
+            jogador.concluido = False
+        
+        # Reconfigurar alvos
+        if len(self.jogadores) >= 2:
+            self._configurar_alvos()
+        
+        return True
