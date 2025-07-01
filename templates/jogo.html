@@ -86,14 +86,14 @@
 
         <!-- Seção: Jogo -->
         <div class="section hidden" id="secao-jogo">
-            <div class="game-board">
-                <!-- Painel de Adivinhação -->
+            <div class="game-board-new">
+                <!-- Coluna 1: Adivinhação / Espelho -->
                 <div class="guess-panel">
-                    <h3>
+                    <h3 id="titulo-adivinhacao">
                         <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        Sua Vez de Adivinhar
+                        <span id="texto-titulo-adivinhacao">Sua Vez de Adivinhar</span>
                     </h3>
                     
                     <div id="minha-vez" class="guess-controls">
@@ -117,40 +117,73 @@
                         </div>
                     </div>
                     
-                    <div id="nao-minha-vez" class="not-your-turn hidden">
-                        <svg class="icon-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p>Aguarde sua vez...</p>
-                        <p class="text-muted">É a vez de <strong id="jogador-da-vez"></strong></p>
-                    </div>
-                </div>
-
-                <!-- Painel de Progresso -->
-                <div class="progress-panel">
-                    <div class="progress-section">
-                        <h4>
-                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                            </svg>
-                            Suas Palavras (Alvo: <span id="meu-alvo">---</span>)
-                        </h4>
-                        <div class="words-grid" id="minhas-palavras-grid">
-                            <!-- Palavras serão geradas dinamicamente -->
+                    <!-- Espelho do Jogador Ativo -->
+                    <div id="espelho-jogador" class="mirror-view hidden">
+                        <div class="mirror-header">
+                            <span class="mirror-icon">👁️</span>
+                            <span id="mirror-player-name">João</span> está jogando
+                            <span class="mirror-timer" id="mirror-timer">⏱️ 15s</span>
+                        </div>
+                        
+                        <div class="current-word-display">
+                            <div class="reference-word" id="mirror-palavra-referencia" style="display: none;">
+                                <span class="reference-label">Palavra de Referência:</span>
+                                <span class="reference-value" id="mirror-valor-referencia">---</span>
+                            </div>
+                            <div class="word-hint-large" id="mirror-dica-atual">---</div>
+                            <div class="word-progress" id="mirror-progresso-palavra">Palavra 1 de 5</div>
+                        </div>
+                        
+                        <div class="guess-input-group">
+                            <input type="text" id="mirror-input-tentativa" placeholder="Seu palpite silencioso..." autocomplete="off" disabled>
+                            <button class="btn btn-secondary" disabled>
+                                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                Observando
+                            </button>
                         </div>
                     </div>
                     
-                    <div class="progress-section">
-                        <h4>
-                            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                            </svg>
-                            Palavras do Adversário
-                        </h4>
-                        <div class="words-grid" id="palavras-alvo-grid">
-                            <!-- Palavras do adversário serão geradas dinamicamente -->
+                    <!-- Botões de Emoji -->
+                    <div class="emoji-reactions">
+                        <h4>🎭 Reações</h4>
+                        <div class="emoji-buttons">
+                            <button class="emoji-btn" onclick="enviarEmoji('👍')" title="Gostei">👍</button>
+                            <button class="emoji-btn" onclick="enviarEmoji('👎')" title="Não gostei">👎</button>
+                            <button class="emoji-btn" onclick="enviarEmoji('🤔')" title="Pensativo">🤔</button>
+                            <button class="emoji-btn" onclick="enviarEmoji('😂')" title="Rindo">😂</button>
+                            <button class="emoji-btn" onclick="enviarEmoji('😱')" title="Surpreso">😱</button>
+                            <button class="emoji-btn" onclick="enviarEmoji('🔥')" title="Incrível">🔥</button>
+                            <button class="emoji-btn" onclick="enviarEmoji('💡')" title="Ideia">💡</button>
+                            <button class="emoji-btn" onclick="enviarEmoji('❤️')" title="Amei">❤️</button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Coluna 2: Suas Palavras -->
+                <div class="my-words-panel">
+                    <h4>
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        Suas Palavras (Alvo: <span id="meu-alvo">---</span>)
+                    </h4>
+                    <div class="words-grid" id="minhas-palavras-grid">
+                        <!-- Palavras serão geradas dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Coluna 3: Todos os Jogadores -->
+                <div class="all-players-panel">
+                    <h4>
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                        </svg>
+                        👥 Todos os Jogadores
+                    </h4>
+                    <div class="all-players-scroll" id="todos-jogadores-container">
+                        <!-- Jogadores serão gerados dinamicamente -->
                     </div>
                 </div>
             </div>
@@ -289,6 +322,13 @@
                 console.log('Pode começar:', data);
                 document.getElementById('status-sala').textContent = data.msg;
                 atualizarListaJogadores(data.jogadores);
+                
+                // Atualizar configuração para todos os jogadores
+                if (data.config) {
+                    numPalavras = data.config.num_palavras;
+                    document.getElementById('num-palavras-texto').textContent = numPalavras;
+                    gerarInputsPalavras(); // Regenerar com o número correto
+                }
                 
                 setTimeout(() => {
                     mostrarSecao('secao-palavras');
@@ -764,6 +804,212 @@
 
         function fecharModalFim() {
             document.getElementById('modal-fim-jogo').classList.add('hidden');
+        }
+
+        // Sistema de Emojis Flutuantes
+        function enviarEmoji(emoji) {
+            // Enviar emoji via socket
+            socket.emit('enviar_emoji', {
+                sala: codigoSala,
+                nome: meuNome,
+                emoji: emoji
+            });
+            
+            // Criar emoji flutuante local
+            criarEmojiFlutante(emoji, meuNome);
+        }
+
+        function criarEmojiFlutante(emoji, jogador) {
+            const container = document.querySelector('.game-container');
+            const emojiElement = document.createElement('div');
+            emojiElement.className = 'floating-emoji';
+            emojiElement.innerHTML = `
+                <div class="emoji-content">
+                    <span class="emoji-icon">${emoji}</span>
+                    <span class="emoji-player">${jogador}</span>
+                </div>
+            `;
+            
+            // Posição aleatória
+            const startX = Math.random() * (window.innerWidth - 100);
+            const startY = window.innerHeight - 100;
+            
+            emojiElement.style.left = startX + 'px';
+            emojiElement.style.top = startY + 'px';
+            
+            container.appendChild(emojiElement);
+            
+            // Animar
+            setTimeout(() => {
+                emojiElement.style.transform = `translateY(-${window.innerHeight + 200}px) rotate(${Math.random() * 360}deg)`;
+                emojiElement.style.opacity = '0';
+            }, 100);
+            
+            // Remover após animação
+            setTimeout(() => {
+                if (emojiElement.parentNode) {
+                    emojiElement.parentNode.removeChild(emojiElement);
+                }
+            }, 3000);
+        }
+
+        // Atualizar espelho do jogador ativo
+        function atualizarEspelhoJogador() {
+            if (!estadoJogo) return;
+            
+            const minhaVez = document.getElementById('minha-vez');
+            const espelhoJogador = document.getElementById('espelho-jogador');
+            const tituloAdivinhacao = document.getElementById('texto-titulo-adivinhacao');
+            
+            if (estadoJogo.jogador_da_vez === meuNome) {
+                // É minha vez - mostrar controles normais
+                minhaVez.classList.remove('hidden');
+                espelhoJogador.classList.add('hidden');
+                tituloAdivinhacao.textContent = 'Sua Vez de Adivinhar';
+            } else {
+                // Não é minha vez - mostrar espelho
+                minhaVez.classList.add('hidden');
+                espelhoJogador.classList.remove('hidden');
+                tituloAdivinhacao.textContent = 'Observando o Jogo';
+                
+                // Encontrar dados do jogador ativo
+                const jogadorAtivo = estadoJogo.jogadores.find(j => j.nome === estadoJogo.jogador_da_vez);
+                if (jogadorAtivo) {
+                    document.getElementById('mirror-player-name').textContent = jogadorAtivo.nome;
+                    document.getElementById('mirror-dica-atual').textContent = jogadorAtivo.dica_atual || '---';
+                    document.getElementById('mirror-progresso-palavra').textContent = 
+                        `Palavra ${jogadorAtivo.palavra_atual_index + 1} de ${estadoJogo.config.num_palavras}`;
+                    
+                    // Palavra de referência no espelho
+                    const mirrorPalavraReferencia = document.getElementById('mirror-palavra-referencia');
+                    const mirrorValorReferencia = document.getElementById('mirror-valor-referencia');
+                    
+                    if (jogadorAtivo.palavra_anterior && jogadorAtivo.palavra_anterior.trim()) {
+                        mirrorPalavraReferencia.style.display = 'block';
+                        mirrorValorReferencia.textContent = jogadorAtivo.palavra_anterior;
+                    } else {
+                        mirrorPalavraReferencia.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        // Atualizar painel de todos os jogadores
+        function atualizarTodosJogadores() {
+            if (!estadoJogo) return;
+            
+            const container = document.getElementById('todos-jogadores-container');
+            container.innerHTML = '';
+            
+            estadoJogo.jogadores.forEach(jogador => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player-section';
+                
+                // Ícone especial para jogador ativo
+                const icone = jogador.nome === estadoJogo.jogador_da_vez ? '🎮' : '👤';
+                const status = jogador.nome === estadoJogo.jogador_da_vez ? ' (Jogando)' : '';
+                
+                // Contar palavras descobertas
+                const descobertas = jogador.palavras_descobertas ? 
+                    jogador.palavras_descobertas.filter(d => d).length : 0;
+                const total = estadoJogo.config.num_palavras;
+                
+                playerDiv.innerHTML = `
+                    <div class="player-header">
+                        <h5>${icone} ${jogador.nome}${status}</h5>
+                        <span class="player-progress">${descobertas}/${total}</span>
+                    </div>
+                    <div class="player-words-grid" id="player-${jogador.nome}-grid">
+                        <!-- Palavras serão geradas -->
+                    </div>
+                `;
+                
+                container.appendChild(playerDiv);
+                
+                // Gerar grid de palavras para este jogador
+                const grid = document.getElementById(`player-${jogador.nome}-grid`);
+                for (let i = 0; i < total; i++) {
+                    const wordDiv = document.createElement('div');
+                    wordDiv.className = 'mini-word-card';
+                    
+                    const descoberta = jogador.palavras_descobertas && jogador.palavras_descobertas[i];
+                    const dica = jogador.dicas && jogador.dicas[i] ? jogador.dicas[i] : '?';
+                    
+                    if (descoberta) {
+                        wordDiv.classList.add('discovered');
+                    } else {
+                        wordDiv.classList.add('not-discovered');
+                    }
+                    
+                    wordDiv.innerHTML = `
+                        <div class="mini-word-hint">${dica}</div>
+                        <div class="mini-word-status">${descoberta ? '✓' : ''}</div>
+                    `;
+                    
+                    grid.appendChild(wordDiv);
+                }
+            });
+        }
+
+        // Adicionar listener para emojis recebidos
+        socket.on('emoji_recebido', function(data) {
+            console.log('Emoji recebido:', data);
+            if (data.nome !== meuNome) { // Não mostrar próprios emojis novamente
+                criarEmojiFlutante(data.emoji, data.nome);
+            }
+        });
+
+        // Atualizar função atualizarInterfaceJogo
+        function atualizarInterfaceJogo() {
+            if (!estadoJogo) return;
+            
+            // Atualizar indicador de turno
+            const indicador = document.getElementById('indicador-turno');
+            const textoTurno = document.getElementById('texto-turno');
+            
+            if (estadoJogo.jogador_da_vez === meuNome) {
+                indicador.className = 'turn-indicator my-turn';
+                textoTurno.textContent = 'Sua vez de jogar!';
+            } else {
+                indicador.className = 'turn-indicator opponent-turn';
+                textoTurno.textContent = `Vez de ${estadoJogo.jogador_da_vez}`;
+            }
+            
+            // Atualizar espelho do jogador
+            atualizarEspelhoJogador();
+            
+            // Encontrar meus dados e do meu alvo
+            const meusDados = estadoJogo.jogadores.find(j => j.nome === meuNome);
+            if (meusDados) {
+                document.getElementById('meu-alvo').textContent = meusDados.alvo;
+                document.getElementById('dica-atual').textContent = meusDados.dica_atual || '---';
+                document.getElementById('progresso-palavra').textContent = 
+                    `Palavra ${meusDados.palavra_atual_index + 1} de ${estadoJogo.config.num_palavras}`;
+                
+                // Atualizar palavra de referência
+                const palavraReferencia = document.getElementById('palavra-referencia');
+                const valorReferencia = document.getElementById('valor-referencia');
+                
+                if (meusDados.palavra_anterior && meusDados.palavra_anterior.trim()) {
+                    palavraReferencia.style.display = 'block';
+                    valorReferencia.textContent = meusDados.palavra_anterior;
+                } else {
+                    palavraReferencia.style.display = 'none';
+                }
+            }
+            
+            // Atualizar minhas palavras (como alvo)
+            const meuAlvo = estadoJogo.jogadores.find(j => j.nome === meusDados?.alvo);
+            if (meuAlvo) {
+                atualizarGridPalavras('minhas-palavras-grid', meuAlvo, true);
+            }
+            
+            // Atualizar todos os jogadores
+            atualizarTodosJogadores();
+            
+            // Atualizar lista de jogadores no header
+            const jogadores = estadoJogo.jogadores.map(j => j.nome);
+            atualizarListaJogadores(jogadores);
         }
 
         // Event listeners para inputs
