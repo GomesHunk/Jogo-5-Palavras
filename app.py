@@ -1,15 +1,30 @@
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from jogo import Jogador, PartidaMultiplayer, Configuracao
+from health import register_health_routes
 import logging
+import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'jogo_das_palavras_secret'
-socketio = SocketIO(app, cors_allowed_origins="*")
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'jogo_das_palavras_secret')
+
+# Configurações otimizadas para produção
+socketio = SocketIO(
+    app, 
+    cors_allowed_origins="*",
+    async_mode='eventlet',
+    ping_timeout=60,
+    ping_interval=25,
+    logger=False,
+    engineio_logger=False
+)
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Registrar rotas de health check
+register_health_routes(app)
 
 salas = {}
 
