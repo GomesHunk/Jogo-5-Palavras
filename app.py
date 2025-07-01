@@ -12,7 +12,6 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'jogo_das_palavras_secre
 socketio = SocketIO(
     app, 
     cors_allowed_origins="*",
-    async_mode='gevent',
     ping_timeout=60,
     ping_interval=25,
     logger=False,
@@ -435,6 +434,52 @@ def sair_da_sala(data):
         
     except Exception as e:
         logger.error(f'Erro ao sair da sala: {str(e)}')
+        emit('erro', {'msg': 'Erro interno do servidor'})
+
+@socketio.on('enviar_emoji')
+def enviar_emoji(data):
+    try:
+        sala = data.get('sala', '').strip().upper()
+        nome = data.get('nome', '').strip()
+        emoji = data.get('emoji', '').strip()
+        
+        if not sala or not nome or not emoji:
+            emit('erro', {'msg': 'Dados incompletos para enviar emoji'})
+            return
+        
+        if sala not in salas:
+            emit('erro', {'msg': 'Sala não encontrada'})
+            return
+        
+        partida = salas[sala]['partida']
+        
+        # Verificar se o jogador está na sala
+        jogador_encontrado = False
+        for j in partida.jogadores:
+            if j.nome == nome:
+                jogador_encontrado = True
+                break
+        
+        if not jogador_encontrado:
+            emit('erro', {'msg': 'Jogador não encontrado na sala'})
+            return
+        
+        # Lista de emojis permitidos (segurança)
+        emojis_permitidos = ['👍', '👎', '🤔', '😂', '😱', '🔥', '💡', '❤️']
+        if emoji not in emojis_permitidos:
+            emit('erro', {'msg': 'Emoji não permitido'})
+            return
+        
+        # Enviar emoji para todos na sala
+        emit('emoji_recebido', {
+            'nome': nome,
+            'emoji': emoji
+        }, room=sala)
+        
+        logger.info(f'Emoji {emoji} enviado por {nome} na sala {sala}')
+        
+    except Exception as e:
+        logger.error(f'Erro ao enviar emoji: {str(e)}')
         emit('erro', {'msg': 'Erro interno do servidor'})
 
 if __name__ == '__main__':
