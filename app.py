@@ -12,7 +12,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'jogo_das_palavras_secre
 socketio = SocketIO(
     app, 
     cors_allowed_origins="*",
-    async_mode='eventlet',
+    async_mode='gevent',
     ping_timeout=60,
     ping_interval=25,
     logger=False,
