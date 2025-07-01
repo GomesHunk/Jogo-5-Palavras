@@ -340,6 +340,69 @@ def receber_mensagem_chat(data):
         logger.error(f'Erro ao enviar mensagem: {str(e)}')
         emit('erro', {'msg': 'Erro interno do servidor'})
 
+@socketio.on('novo_jogo')
+def novo_jogo(data):
+    try:
+        sala = data.get('sala', '').strip().upper()
+        nome = data.get('nome', '').strip()
+        
+        if sala not in salas:
+            emit('erro', {'msg': 'Sala não encontrada'})
+            return
+        
+        partida = salas[sala]['partida']
+        
+        # Verificar se o jogador está na sala
+        jogador_encontrado = False
+        for j in partida.jogadores:
+            if j.nome == nome:
+                jogador_encontrado = True
+                break
+        
+        if not jogador_encontrado:
+            emit('erro', {'msg': 'Jogador não encontrado na sala'})
+            return
+        
+        # Reiniciar o jogo
+        partida.reiniciar_jogo()
+        
+        # Notificar todos na sala
+        emit('jogo_reiniciado', {
+            'msg': f'{nome} iniciou um novo jogo!',
+            'jogadores': [j.nome for j in partida.jogadores],
+            'config': {
+                'num_palavras': partida.config.num_palavras,
+                'max_jogadores': partida.config.max_jogadores
+            }
+        }, room=sala)
+        
+        logger.info(f'Novo jogo iniciado na sala {sala} por {nome}')
+        
+    except Exception as e:
+        logger.error(f'Erro ao iniciar novo jogo: {str(e)}')
+        emit('erro', {'msg': 'Erro interno do servidor'})
+
+@socketio.on('obter_gabarito')
+def obter_gabarito(data):
+    try:
+        sala = data.get('sala', '').strip().upper()
+        
+        if sala not in salas:
+            emit('erro', {'msg': 'Sala não encontrada'})
+            return
+        
+        partida = salas[sala]['partida']
+        gabarito = partida.get_gabarito_completo()
+        
+        if gabarito:
+            emit('gabarito_completo', {'gabarito': gabarito})
+        else:
+            emit('erro', {'msg': 'Jogo ainda não terminou'})
+        
+    except Exception as e:
+        logger.error(f'Erro ao obter gabarito: {str(e)}')
+        emit('erro', {'msg': 'Erro interno do servidor'})
+
 @socketio.on('sair_da_sala')
 def sair_da_sala(data):
     try:
