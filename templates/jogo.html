@@ -909,15 +909,22 @@
                 const icone = jogador.nome === estadoJogo.jogador_da_vez ? '🎮' : '👤';
                 const status = jogador.nome === estadoJogo.jogador_da_vez ? ' (Jogando)' : '';
                 
-                // Contar palavras descobertas
+                // Contar palavras descobertas pelo jogador (palavras do seu alvo)
                 const descobertas = jogador.palavras_descobertas ? 
                     jogador.palavras_descobertas.filter(d => d).length : 0;
                 const total = estadoJogo.config.num_palavras;
+                
+                // Encontrar quem é o alvo deste jogador
+                const nomeAlvo = jogador.alvo || '---';
                 
                 playerDiv.innerHTML = `
                     <div class="player-header">
                         <h5>${icone} ${jogador.nome}${status}</h5>
                         <span class="player-progress">${descobertas}/${total}</span>
+                    </div>
+                    <div class="player-target-info">
+                        <span class="target-label">Adivinhando palavras de:</span>
+                        <span class="target-name">${nomeAlvo}</span>
                     </div>
                     <div class="player-words-grid" id="player-${jogador.nome}-grid">
                         <!-- Palavras serão geradas -->
@@ -926,7 +933,7 @@
                 
                 container.appendChild(playerDiv);
                 
-                // Gerar grid de palavras para este jogador
+                // Gerar grid de palavras para este jogador (palavras do seu alvo)
                 const grid = document.getElementById(`player-${jogador.nome}-grid`);
                 for (let i = 0; i < total; i++) {
                     const wordDiv = document.createElement('div');
@@ -954,9 +961,7 @@
         // Adicionar listener para emojis recebidos
         socket.on('emoji_recebido', function(data) {
             console.log('Emoji recebido:', data);
-            if (data.nome !== meuNome) { // Não mostrar próprios emojis novamente
-                criarEmojiFlutante(data.emoji, data.nome);
-            }
+            criarEmojiFlutante(data.emoji, data.nome);
         });
 
         // Atualizar função atualizarInterfaceJogo
