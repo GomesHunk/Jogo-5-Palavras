@@ -594,6 +594,31 @@ textarea {
   border-radius: var(--radius);
 }
 
+.player-target-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background: var(--surface-elevated);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.target-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.target-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--success-color);
+}
+
 .player-words-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
