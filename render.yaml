@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: jogo-5-palavras
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --worker-class eventlet -w 1 --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 100 --preload --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.16
+      - key: WEB_CONCURRENCY
+        value: 1
